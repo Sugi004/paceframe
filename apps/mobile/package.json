@@ -1,0 +1,23 @@
+{
+  "name": "@paceframe/mobile",
+  "private": true,
+  "version": "0.1.0",
+  "main": "expo/AppEntry",
+  "scripts": {
+    "dev": "expo start",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@paceframe/shared": "*",
+    "expo": "~54.0.0",
+    "expo-status-bar": "~3.0.8",
+    "firebase": "^11.7.1",
+    "react": "19.1.0",
+    "react-native": "0.81.0",
+    "@supabase/supabase-js": "^2.49.8"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.10",
+    "typescript": "^5.8.3"
+  }
+}
