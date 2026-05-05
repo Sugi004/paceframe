@@ -1,4 +1,4 @@
-import { Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { recoveryProtocols } from '@paceframe/shared';
 import type { PaceframeAppController } from '../types';
 import { Card, PageIntro } from '../components/primitives';
@@ -15,17 +15,17 @@ export function ResetScreen({ plan, burnoutSignal }: ResetScreenProps) {
       />
 
       <Card title={`Burnout risk: ${burnoutSignal.level} • ${burnoutSignal.score}/100`} subtitle={burnoutSignal.summary} tone="navy">
-        {recoveryProtocols[burnoutSignal.level].map((protocol) => (
-          <View key={protocol.id} style={styles.protocolRow}>
-            <View style={styles.protocolDuration}>
-              <Text style={styles.protocolDurationLabel}>{protocol.duration}</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.carouselTrack}>
+          {recoveryProtocols[burnoutSignal.level].map((protocol) => (
+            <View key={protocol.id} style={[styles.carouselPanel, styles.carouselPanelDeep]}>
+              <View style={styles.protocolDurationFloating}>
+                <Text style={styles.protocolDurationLabel}>{protocol.duration}</Text>
+              </View>
+              <Text style={styles.carouselTitleLight}>{protocol.title}</Text>
+              <Text style={styles.carouselBodyLight}>{protocol.description}</Text>
             </View>
-            <View style={styles.listText}>
-              <Text style={styles.protocolTitle}>{protocol.title}</Text>
-              <Text style={styles.protocolDescription}>{protocol.description}</Text>
-            </View>
-          </View>
-        ))}
+          ))}
+        </ScrollView>
       </Card>
 
       <Card title="Recovery blocks already in your day" subtitle="Support is already being placed before overload spills into the rest of the day." tone="warm">
@@ -38,15 +38,20 @@ export function ResetScreen({ plan, burnoutSignal }: ResetScreenProps) {
       </Card>
 
       <Card title="Reset sequence" subtitle="A simple order of operations when you are too overloaded to think clearly." tone="light">
-        <View style={styles.simpleRow}>
-          <Text style={styles.listTitle}>1. Reduce visual and notification noise</Text>
-        </View>
-        <View style={styles.simpleRow}>
-          <Text style={styles.listTitle}>2. Eat or hydrate before chasing more output</Text>
-        </View>
-        <View style={styles.simpleRow}>
-          <Text style={styles.listTitle}>3. Pick one essential task or end the workday early</Text>
-        </View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.carouselTrack}>
+          <View style={[styles.carouselPanel, styles.carouselPanelSoft]}>
+            <Text style={styles.carouselEyebrowDark}>Step 1</Text>
+            <Text style={styles.carouselTitleDark}>Reduce visual and notification noise</Text>
+          </View>
+          <View style={[styles.carouselPanel, styles.carouselPanelSoft]}>
+            <Text style={styles.carouselEyebrowDark}>Step 2</Text>
+            <Text style={styles.carouselTitleDark}>Eat or hydrate before chasing more output</Text>
+          </View>
+          <View style={[styles.carouselPanel, styles.carouselPanelSoft]}>
+            <Text style={styles.carouselEyebrowDark}>Step 3</Text>
+            <Text style={styles.carouselTitleDark}>Pick one essential task or end the workday early</Text>
+          </View>
+        </ScrollView>
       </Card>
     </View>
   );

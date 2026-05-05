@@ -30,6 +30,79 @@ export const styles = StyleSheet.create({
   screenShell: {
     flex: 1
   },
+  tabScreenHost: {
+    flex: 1
+  },
+  transitionOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(7, 15, 29, 0.72)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 22
+  },
+  transitionCard: {
+    width: '100%',
+    borderRadius: 28,
+    backgroundColor: '#102347',
+    padding: 24,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    shadowColor: '#020816',
+    shadowOpacity: 0.35,
+    shadowRadius: 28,
+    shadowOffset: { width: 0, height: 16 },
+    elevation: 12
+  },
+  transitionOrbLarge: {
+    position: 'absolute',
+    width: 220,
+    height: 220,
+    borderRadius: 999,
+    backgroundColor: 'rgba(142,217,255,0.18)',
+    right: -70,
+    top: -80
+  },
+  transitionOrbSmall: {
+    position: 'absolute',
+    width: 150,
+    height: 150,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,211,110,0.18)',
+    right: 10,
+    bottom: -60
+  },
+  transitionEyebrow: {
+    color: '#8ed9ff',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    marginBottom: 10
+  },
+  transitionTitle: {
+    color: '#f7fbff',
+    fontSize: 26,
+    lineHeight: 32,
+    fontWeight: '900',
+    marginBottom: 10,
+    maxWidth: '88%'
+  },
+  transitionBody: {
+    color: '#cfe1ff',
+    fontSize: 15,
+    lineHeight: 23,
+    marginBottom: 18,
+    maxWidth: '88%'
+  },
+  transitionBarStack: {
+    gap: 10
+  },
+  transitionBar: {
+    height: 12,
+    borderRadius: 999,
+    backgroundColor: '#dbe7ff'
+  },
   content: {
     paddingHorizontal: 18,
     paddingTop: 14,
@@ -39,6 +112,79 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingTop: 16,
     paddingBottom: 24
+  },
+  assistantScreen: {
+    flex: 1,
+    paddingHorizontal: 18,
+    paddingTop: 12,
+    paddingBottom: 8
+  },
+  assistantTopBar: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 12
+  },
+  assistantTopBarCopy: {
+    flex: 1
+  },
+  assistantTopBarEyebrow: {
+    color: '#8ed9ff',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    marginBottom: 6
+  },
+  assistantTopBarTitle: {
+    color: '#f7fbff',
+    fontSize: 28,
+    lineHeight: 32,
+    fontWeight: '900',
+    marginBottom: 4
+  },
+  assistantTopBarSubtitle: {
+    color: '#a8b7d4',
+    fontSize: 13,
+    lineHeight: 18
+  },
+  assistantTopBarActions: {
+    alignItems: 'flex-end',
+    gap: 8
+  },
+  assistantRetryButton: {
+    borderRadius: 999,
+    backgroundColor: '#102347',
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)'
+  },
+  assistantRetryButtonLabel: {
+    color: '#ffffff',
+    fontWeight: '900',
+    fontSize: 12
+  },
+  assistantContextLine: {
+    color: '#94a7ca',
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 8,
+    marginBottom: 10
+  },
+  assistantConversationShell: {
+    flex: 1,
+    minHeight: 0,
+    borderRadius: 30,
+    backgroundColor: '#f7fbff',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.14)',
+    shadowColor: '#061024',
+    shadowOpacity: 0.16,
+    shadowRadius: 22,
+    shadowOffset: { width: 0, height: 14 },
+    elevation: 8,
+    overflow: 'hidden'
   },
   authContent: {
     paddingHorizontal: 18,
@@ -281,7 +427,65 @@ export const styles = StyleSheet.create({
     backgroundColor: '#fef0d9',
     borderRadius: 28,
     padding: 22,
-    marginBottom: 18
+    marginBottom: 18,
+    position: 'relative',
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.32)',
+    shadowColor: '#061024',
+    shadowOpacity: 0.28,
+    shadowRadius: 26,
+    shadowOffset: { width: 0, height: 16 },
+    elevation: 12
+  },
+  heroGlowLarge: {
+    position: 'absolute',
+    width: 220,
+    height: 220,
+    borderRadius: 999,
+    backgroundColor: 'rgba(111, 223, 255, 0.22)',
+    right: -52,
+    bottom: -68
+  },
+  heroGlowSmall: {
+    position: 'absolute',
+    width: 140,
+    height: 140,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255, 206, 126, 0.22)',
+    right: 20,
+    top: 36
+  },
+  heroFloatingMiniCard: {
+    position: 'absolute',
+    top: 22,
+    right: 22,
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    minWidth: 118,
+    backgroundColor: 'rgba(15,23,48,0.93)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    shadowColor: '#061024',
+    shadowOpacity: 0.25,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 10
+  },
+  heroFloatingMiniLabel: {
+    color: '#8ed9ff',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    marginBottom: 4
+  },
+  heroFloatingMiniValue: {
+    color: '#f7fbff',
+    fontSize: 16,
+    fontWeight: '900',
+    textTransform: 'capitalize'
   },
   heroEyebrow: {
     color: '#ff6b3d',
@@ -295,13 +499,15 @@ export const styles = StyleSheet.create({
     fontSize: 32,
     lineHeight: 37,
     fontWeight: '900',
-    marginBottom: 10
+    marginBottom: 10,
+    maxWidth: '72%'
   },
   heroSubtitle: {
     color: '#4f5d79',
     fontSize: 16,
     lineHeight: 24,
-    marginBottom: 16
+    marginBottom: 16,
+    maxWidth: '74%'
   },
   heroChips: {
     flexDirection: 'row',
@@ -379,7 +585,7 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: '#101c32',
     borderRadius: 999,
-    padding: 6,
+    padding: 5,
     marginHorizontal: 18,
     marginTop: 8,
     marginBottom: 16
@@ -388,7 +594,7 @@ export const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     borderRadius: 999,
-    paddingVertical: 12
+    paddingVertical: 10
   },
   tabActive: {
     backgroundColor: '#f7fbff'
@@ -396,7 +602,7 @@ export const styles = StyleSheet.create({
   tabLabel: {
     color: '#9fafc9',
     fontWeight: '700',
-    fontSize: 12
+    fontSize: 10
   },
   tabLabelActive: {
     color: '#0f1730'
@@ -405,7 +611,14 @@ export const styles = StyleSheet.create({
     borderRadius: 24,
     padding: 18,
     backgroundColor: '#f7fbff',
-    marginBottom: 16
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.18)',
+    shadowColor: '#061024',
+    shadowOpacity: 0.18,
+    shadowRadius: 22,
+    shadowOffset: { width: 0, height: 14 },
+    elevation: 8
   },
   cardNavy: {
     backgroundColor: '#102347'
@@ -449,6 +662,69 @@ export const styles = StyleSheet.create({
     color: '#cfe1ff',
     lineHeight: 20,
     maxWidth: 220
+  },
+  energyConfirmCard: {
+    borderRadius: 24,
+    padding: 18,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.09)',
+    shadowColor: '#061024',
+    shadowOpacity: 0.14,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 5
+  },
+  energyConfirmEyebrow: {
+    color: '#8ed9ff',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.05,
+    textTransform: 'uppercase',
+    marginBottom: 10
+  },
+  energyConfirmTitle: {
+    color: '#ffffff',
+    fontSize: 21,
+    lineHeight: 26,
+    fontWeight: '900',
+    marginBottom: 8
+  },
+  energyConfirmBody: {
+    color: '#cfe1ff',
+    lineHeight: 21,
+    marginBottom: 14
+  },
+  energyConfirmRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12
+  },
+  energyConfirmSegment: {
+    width: '31%',
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    paddingVertical: 11,
+    alignItems: 'center'
+  },
+  energyConfirmSegmentActive: {
+    backgroundColor: '#ffd36e',
+    borderColor: '#ffd36e'
+  },
+  energyConfirmSegmentLabel: {
+    color: '#f7fbff',
+    fontWeight: '800',
+    textTransform: 'capitalize'
+  },
+  energyConfirmSegmentLabelActive: {
+    color: '#0f1730'
+  },
+  energyConfirmFootnote: {
+    color: '#9fb8da',
+    fontSize: 12,
+    lineHeight: 18
   },
   aiCoachBox: {
     marginTop: 14,
@@ -500,6 +776,254 @@ export const styles = StyleSheet.create({
     color: '#0f1730',
     fontWeight: '900'
   },
+  aiStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  aiStatusPill: {
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8
+  },
+  aiStatusPillReady: {
+    backgroundColor: '#c8f5de'
+  },
+  aiStatusPillError: {
+    backgroundColor: '#ffd0d0'
+  },
+  aiStatusPillLabel: {
+    color: '#0f1730',
+    fontWeight: '800'
+  },
+  assistantSignalInline: {
+    marginLeft: 10,
+    color: '#a8b7d4',
+    fontSize: 12,
+    lineHeight: 16,
+    flex: 1
+  },
+  aiThinkingCard: {
+    borderRadius: 22,
+    padding: 16,
+    backgroundColor: '#102347',
+    marginTop: 6,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)'
+  },
+  aiThinkingEyebrow: {
+    color: '#8ed9ff',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    marginBottom: 8
+  },
+  aiThinkingTitle: {
+    color: '#ffffff',
+    fontSize: 18,
+    lineHeight: 24,
+    fontWeight: '800',
+    marginBottom: 8
+  },
+  aiThinkingBody: {
+    color: '#cfe1ff',
+    lineHeight: 21,
+    marginBottom: 14
+  },
+  aiThinkingBarStack: {
+    gap: 8
+  },
+  aiThinkingBar: {
+    height: 10,
+    borderRadius: 999,
+    backgroundColor: 'rgba(142,217,255,0.85)'
+  },
+  promptChipRow: {
+    paddingRight: 8,
+    marginBottom: 12
+  },
+  promptChip: {
+    borderRadius: 999,
+    backgroundColor: '#edf4ff',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginRight: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(15,23,48,0.08)'
+  },
+  promptChipLabel: {
+    color: '#24406a',
+    fontWeight: '700'
+  },
+  quickAskGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between'
+  },
+  quickAskStrip: {
+    paddingTop: 8,
+    paddingBottom: 2,
+    paddingRight: 6,
+    marginTop: 8
+  },
+  quickAskChip: {
+    borderRadius: 999,
+    backgroundColor: '#fff2dc',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginRight: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(15,23,48,0.06)'
+  },
+  quickAskChipLabel: {
+    color: '#173056',
+    lineHeight: 18,
+    fontSize: 12,
+    fontWeight: '800'
+  },
+  quickAskCard: {
+    width: '48%',
+    borderRadius: 20,
+    padding: 14,
+    backgroundColor: '#fff2dc',
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(15,23,48,0.06)',
+    shadowColor: '#061024',
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 3
+  },
+  quickAskLabel: {
+    color: '#173056',
+    lineHeight: 21,
+    fontWeight: '800'
+  },
+  carouselTrack: {
+    paddingRight: 8
+  },
+  carouselPanel: {
+    width: 248,
+    borderRadius: 24,
+    padding: 18,
+    marginRight: 12,
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.14)',
+    shadowColor: '#061024',
+    shadowOpacity: 0.18,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 7
+  },
+  focusLanePrimary: {
+    borderRadius: 24,
+    padding: 18,
+    width: '100%',
+    alignSelf: 'stretch',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.14)',
+    shadowColor: '#061024',
+    shadowOpacity: 0.18,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 7,
+    marginBottom: 12
+  },
+  focusLaneSecondaryTrack: {
+    paddingRight: 8
+  },
+  carouselPanelNavy: {
+    backgroundColor: '#102347'
+  },
+  carouselPanelWarm: {
+    backgroundColor: '#ffe7c6'
+  },
+  carouselPanelTeal: {
+    backgroundColor: '#cdf7ee'
+  },
+  carouselPanelLime: {
+    backgroundColor: '#e6f9c8'
+  },
+  carouselPanelSoft: {
+    backgroundColor: '#edf4ff'
+  },
+  carouselPanelDeep: {
+    backgroundColor: '#163056',
+    paddingTop: 76
+  },
+  carouselEyebrow: {
+    color: '#8ed9ff',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.05,
+    textTransform: 'uppercase',
+    marginBottom: 10
+  },
+  carouselEyebrowDark: {
+    color: '#59708f',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.05,
+    textTransform: 'uppercase',
+    marginBottom: 10
+  },
+  carouselTitleLight: {
+    color: '#ffffff',
+    fontSize: 21,
+    lineHeight: 26,
+    fontWeight: '900',
+    marginBottom: 8
+  },
+  carouselTitleDark: {
+    color: '#0f1730',
+    fontSize: 21,
+    lineHeight: 26,
+    fontWeight: '900',
+    marginBottom: 8
+  },
+  carouselBodyLight: {
+    color: '#d6e7ff',
+    lineHeight: 22
+  },
+  carouselBodyDark: {
+    color: '#40506d',
+    lineHeight: 22
+  },
+  carouselMetaLight: {
+    color: '#8ed9ff',
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 14
+  },
+  carouselMetaDark: {
+    color: '#6a7892',
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 14
+  },
+  carouselActionPill: {
+    alignSelf: 'flex-start',
+    borderRadius: 999,
+    backgroundColor: '#0f1730',
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    marginTop: 14
+  },
+  carouselActionPillLabel: {
+    color: '#ffffff',
+    fontWeight: '800'
+  },
+  carouselScoreDark: {
+    color: '#0f1730',
+    fontSize: 30,
+    lineHeight: 34,
+    fontWeight: '900',
+    marginBottom: 10
+  },
   metricsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -549,7 +1073,14 @@ export const styles = StyleSheet.create({
     padding: 14,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 10
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.46)',
+    shadowColor: '#061024',
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 4
   },
   listText: {
     flex: 1,
@@ -645,7 +1176,9 @@ export const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.45)',
     borderRadius: 16,
     padding: 14,
-    marginBottom: 10
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.42)'
   },
   inlineGuideStack: {
     marginTop: 14
@@ -654,7 +1187,9 @@ export const styles = StyleSheet.create({
     backgroundColor: '#163056',
     borderRadius: 16,
     padding: 14,
-    marginBottom: 10
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)'
   },
   completedRow: {
     backgroundColor: 'rgba(255,255,255,0.42)',
@@ -662,7 +1197,14 @@ export const styles = StyleSheet.create({
     padding: 14,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 10
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.46)',
+    shadowColor: '#061024',
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 4
   },
   completedTitle: {
     color: '#50607c',
@@ -738,7 +1280,173 @@ export const styles = StyleSheet.create({
   helperBody: {
     color: '#5c6b86',
     lineHeight: 21,
-    marginBottom: 12
+    marginBottom: 8,
+    fontSize: 13
+  },
+  assistantReplyCard: {
+    marginTop: 6,
+    borderRadius: 20,
+    padding: 16,
+    backgroundColor: '#edf4ff',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.48)',
+    shadowColor: '#061024',
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 4
+  },
+  assistantReplyHeadline: {
+    color: '#5c6f92',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    marginBottom: 8
+  },
+  assistantReplyBody: {
+    color: '#0f1730',
+    fontSize: 18,
+    lineHeight: 26,
+    fontWeight: '700',
+    marginBottom: 10
+  },
+  assistantStepsStack: {
+    marginBottom: 10,
+    gap: 6
+  },
+  assistantReplyStep: {
+    color: '#1d3254',
+    lineHeight: 22,
+    fontWeight: '700'
+  },
+  assistantReplyMeta: {
+    color: '#1d3254',
+    fontWeight: '800',
+    marginBottom: 8,
+    lineHeight: 21
+  },
+  assistantReplySupport: {
+    color: '#5c6b86',
+    lineHeight: 21
+  },
+  assistantReplyFollowUp: {
+    color: '#35517f',
+    lineHeight: 21,
+    marginTop: 10,
+    fontWeight: '700'
+  },
+  assistantThreadScroll: {
+    flex: 1,
+    minHeight: 0
+  },
+  assistantThreadContent: {
+    flexGrow: 1,
+    paddingHorizontal: 12,
+    paddingTop: 12,
+    paddingBottom: 10
+  },
+  assistantThreadContentEmpty: {
+    justifyContent: 'center'
+  },
+  assistantThreadContentActive: {
+    justifyContent: 'flex-end'
+  },
+  threadStack: {
+    paddingBottom: 6
+  },
+  threadBubble: {
+    borderRadius: 20,
+    padding: 14,
+    marginBottom: 10,
+    maxWidth: '84%'
+  },
+  threadBubbleUser: {
+    alignSelf: 'flex-end',
+    backgroundColor: '#0f1730',
+    borderBottomRightRadius: 8
+  },
+  threadBubbleAssistant: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#edf4ff',
+    borderWidth: 1,
+    borderColor: 'rgba(15,23,48,0.06)',
+    borderBottomLeftRadius: 8
+  },
+  threadRole: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    marginBottom: 6,
+    color: '#8b9bb8'
+  },
+  threadText: {
+    lineHeight: 22,
+    fontWeight: '700'
+  },
+  threadTextUser: {
+    color: '#f7fbff'
+  },
+  threadTextAssistant: {
+    color: '#102347'
+  },
+  threadMeta: {
+    marginTop: 8,
+    color: '#5c6b86',
+    lineHeight: 20,
+    fontWeight: '700'
+  },
+  emptyAIState: {
+    borderRadius: 20,
+    padding: 18,
+    backgroundColor: '#eef5ff',
+    borderWidth: 1,
+    borderColor: 'rgba(15,23,48,0.06)',
+    marginBottom: 10
+  },
+  emptyAIStateTitle: {
+    color: '#102347',
+    fontSize: 18,
+    fontWeight: '800',
+    marginBottom: 8
+  },
+  emptyAIStateBody: {
+    color: '#5c6b86',
+    lineHeight: 21
+  },
+  chatComposerDock: {
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(15,23,48,0.08)',
+    paddingTop: 8,
+    paddingHorizontal: 12,
+    paddingBottom: 10,
+    backgroundColor: '#f7fbff'
+  },
+  chatComposerShell: {
+    borderRadius: 24,
+    backgroundColor: '#eef5ff',
+    padding: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(15,23,48,0.06)'
+  },
+  chatComposerInput: {
+    borderRadius: 18,
+    backgroundColor: 'transparent',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    color: '#0f1730',
+    minHeight: 50,
+    maxHeight: 96,
+    textAlignVertical: 'top',
+    marginBottom: 6
+  },
+  chatComposerRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end'
+  },
+  chatSendButton: {
+    minWidth: 108
   },
   settingsInput: {
     borderRadius: 16,
@@ -807,7 +1515,14 @@ export const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.48)',
     borderRadius: 18,
     padding: 14,
-    marginBottom: 10
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.4)',
+    shadowColor: '#061024',
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 4
   },
   reminderHeader: {
     flexDirection: 'row',
@@ -833,5 +1548,33 @@ export const styles = StyleSheet.create({
     color: '#0f1730',
     fontWeight: '900',
     fontSize: 16
+  },
+  protocolDurationFloating: {
+    position: 'absolute',
+    top: 18,
+    left: 18,
+    alignSelf: 'flex-start',
+    borderRadius: 999,
+    backgroundColor: '#ffd36e',
+    paddingHorizontal: 12,
+    paddingVertical: 8
+  },
+  essentialsWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap'
+  },
+  essentialChip: {
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.55)',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginRight: 10,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.45)'
+  },
+  essentialChipLabel: {
+    color: '#254343',
+    fontWeight: '800'
   }
 });

@@ -1,4 +1,4 @@
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import type { PaceframeAppController } from '../types';
 import { Card, CareTracker, MetricControl, PageIntro, ReflectionField } from '../components/primitives';
 import { styles } from '../styles';
@@ -17,12 +17,34 @@ export function CheckInScreen({
   shiftReminder,
   updateReflectionField
 }: CheckInScreenProps) {
+  const strainAverage = Math.round(((11 - dashboard.checkIn.sleepQuality) + dashboard.checkIn.stressLevel + dashboard.checkIn.screenFatigue) / 3);
+
   return (
     <View>
       <PageIntro
         title="Check in with yourself"
         subtitle="Update your current strain level, care basics, reminders, and reflection so Paceframe reacts to your real state."
       />
+
+      <Card title="State deck" subtitle="A quicker visual read on how the system sees your current load before you edit the details." tone="navy">
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.carouselTrack}>
+          <View style={[styles.carouselPanel, styles.carouselPanelWarm]}>
+            <Text style={styles.carouselEyebrowDark}>Strain average</Text>
+            <Text style={styles.carouselScoreDark}>{strainAverage}/10</Text>
+            <Text style={styles.carouselBodyDark}>The higher this goes, the more Paceframe shifts toward protection and recovery.</Text>
+          </View>
+          <View style={[styles.carouselPanel, styles.carouselPanelTeal]}>
+            <Text style={styles.carouselEyebrowDark}>Care coverage</Text>
+            <Text style={styles.carouselScoreDark}>{dashboard.carePlan.mealsDone + dashboard.carePlan.movementDone + dashboard.carePlan.restDone} anchors</Text>
+            <Text style={styles.carouselBodyDark}>Meals, movement, and rest are the levers that help the rest of the app make better calls.</Text>
+          </View>
+          <View style={[styles.carouselPanel, styles.carouselPanelLime]}>
+            <Text style={styles.carouselEyebrowDark}>AI memory</Text>
+            <Text style={styles.carouselTitleDark}>Today&apos;s context is being stored</Text>
+            <Text style={styles.carouselBodyDark}>Your reflection and check-in shifts help the coach stop sounding generic over time.</Text>
+          </View>
+        </ScrollView>
+      </Card>
 
       <Card title="Live check-in" subtitle="For burnout inputs, higher means more strain on your system." tone="teal">
         <MetricControl label="Sleep trouble" value={11 - dashboard.checkIn.sleepQuality} onMinus={() => adjustSleepTrouble(-1)} onPlus={() => adjustSleepTrouble(1)} />

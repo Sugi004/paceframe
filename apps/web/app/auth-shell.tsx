@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   createUserWithEmailAndPassword,
   isSignInWithEmailLink,
@@ -65,8 +66,9 @@ function formatAuthErrorMessage(error: unknown, mode: AuthMode) {
   }
 }
 
-export function AuthShell() {
-  const [mode, setMode] = useState<AuthMode>('signup');
+export function AuthShell({ initialMode = 'signup' }: { initialMode?: AuthMode }) {
+  const router = useRouter();
+  const [mode, setMode] = useState<AuthMode>(initialMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [status, setStatus] = useState<'idle' | 'working' | 'sent' | 'verified' | 'error'>('idle');
@@ -75,6 +77,12 @@ export function AuthShell() {
 
   const authReady = Boolean(hasFirebaseConfig && auth);
   const currentMode = modeCopy[mode];
+
+  useEffect(() => {
+    setMode(initialMode);
+    setStatus('idle');
+    setMessage(modeCopy[initialMode].subtitle);
+  }, [initialMode]);
 
   useEffect(() => {
     if (!auth) {
@@ -87,6 +95,12 @@ export function AuthShell() {
 
     return unsubscribe;
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      router.replace('/onboarding');
+    }
+  }, [router, user]);
 
   useEffect(() => {
     async function completeEmailLinkSignIn() {
@@ -107,6 +121,7 @@ export function AuthShell() {
         window.localStorage.removeItem(EMAIL_KEY);
         setStatus('verified');
         setMessage('Email verified. You can continue in the mobile app with the same Paceframe account.');
+        router.replace('/onboarding');
       } catch (error) {
         setStatus('error');
         setMessage(error instanceof Error ? error.message : 'We could not verify your email link.');
@@ -144,6 +159,7 @@ export function AuthShell() {
         await createUserWithEmailAndPassword(auth, email.trim(), password);
         setStatus('verified');
         setMessage('Account created. You can now use the same credentials in the mobile app.');
+        router.push('/onboarding');
         return;
       }
 
@@ -151,6 +167,7 @@ export function AuthShell() {
         await signInWithEmailAndPassword(auth, email.trim(), password);
         setStatus('verified');
         setMessage('Signed in. Your account is ready to use in the mobile app too.');
+        router.push('/onboarding');
         return;
       }
 
@@ -197,6 +214,7 @@ export function AuthShell() {
     }
 
     await signOut(auth);
+    router.replace('/');
     setStatus('idle');
     setMessage('Signed out. Paceframe still saves the real planning experience for mobile.');
   }
@@ -264,18 +282,13 @@ export function AuthShell() {
             <>
               <div className="auth-mode-switch">
                 {(['signup', 'signin', 'reset'] as AuthMode[]).map((nextMode) => (
-                  <button
+                  <a
                     key={nextMode}
-                    type="button"
                     className={nextMode === mode ? 'mode-chip active' : 'mode-chip'}
-                    onClick={() => {
-                      setMode(nextMode);
-                      setStatus('idle');
-                      setMessage(modeCopy[nextMode].subtitle);
-                    }}
+                    href={nextMode === 'signup' ? '/' : `/?mode=${nextMode}`}
                   >
                     {nextMode === 'signup' ? 'Create account' : nextMode === 'signin' ? 'Sign in' : 'Reset'}
-                  </button>
+                  </a>
                 ))}
               </div>
 

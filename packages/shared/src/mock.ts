@@ -94,6 +94,10 @@ export const mockDashboard: DashboardState = {
     eveningNote: 'I tend to overwork when I feel behind, even when rest would help more.',
     gratitude: 'A calmer afternoon after I finally stepped away from the screen.'
   },
+  taskFlow: {
+    selectedEnergyLane: null,
+    needsEnergyConfirmation: true
+  },
   weeklyBurnoutScores: [52, 58, 61, 49, 44, 39, 42],
   streakDays: 4,
   tasks: [

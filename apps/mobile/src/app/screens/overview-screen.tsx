@@ -1,4 +1,4 @@
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import type { PaceframeAppController } from '../types';
 import { Card, MetricPill, SummaryItem } from '../components/primitives';
 import { HeroCard } from '../components/hero-card';
@@ -6,7 +6,19 @@ import { styles } from '../styles';
 
 type OverviewScreenProps = Pick<
   PaceframeAppController,
-  'dashboard' | 'careConsistency' | 'weeklyInsight' | 'dailyBrief' | 'aiCoach' | 'nextReminders' | 'weeklySummary' | 'burnoutSignal' | 'plan' | 'aiStatus' | 'aiMessage' | 'retryLiveCoaching'
+  | 'dashboard'
+  | 'careConsistency'
+  | 'weeklyInsight'
+  | 'dailyBrief'
+  | 'aiCoach'
+  | 'nextReminders'
+  | 'weeklySummary'
+  | 'burnoutSignal'
+  | 'plan'
+  | 'aiStatus'
+  | 'aiMessage'
+  | 'retryLiveCoaching'
+  | 'liveCoaching'
 >;
 
 export function OverviewScreen({
@@ -21,7 +33,8 @@ export function OverviewScreen({
   plan,
   aiStatus,
   aiMessage,
-  retryLiveCoaching
+  retryLiveCoaching,
+  liveCoaching
 }: OverviewScreenProps) {
   const topTask = plan.prioritizedTasks[0];
   const essentials = plan.essentials.slice(0, 3);
@@ -47,27 +60,6 @@ export function OverviewScreen({
         </View>
       </Card>
 
-      <Card
-        title="Your next best move"
-        subtitle={topTask ? 'The planner is recommending a single task to anchor the day.' : 'No task is currently ahead of the rest.'}
-        tone="warm"
-      >
-        <View style={styles.listCard}>
-          <View style={styles.listText}>
-            <Text style={styles.listTitle}>{topTask ? topTask.title : 'Keep the day light and protect recovery.'}</Text>
-            <Text style={styles.listMeta}>
-              {topTask
-                ? `${topTask.energyCost} energy • ${topTask.estimatedMinutes} min • score ${topTask.priorityScore}`
-                : 'If your energy is unstable, avoid filling the space with shallow work.'}
-            </Text>
-          </View>
-        </View>
-      </Card>
-
-      <Card title={weeklyInsight.title} subtitle={weeklyInsight.summary} tone="teal">
-        <Text style={styles.lightBody}>{weeklyInsight.experiment}</Text>
-      </Card>
-
       <Card title={dailyBrief.headline} subtitle={dailyBrief.focusBlock} tone="navy">
         <Text style={styles.inverseBody}>{dailyBrief.recoveryAnchor}</Text>
         <View style={styles.aiCoachBox}>
@@ -87,6 +79,35 @@ export function OverviewScreen({
         </View>
       </Card>
 
+      <Card title="AI control deck" subtitle="Swipe through the live coaching layer, your best move, and the weekly experiment without leaving the overview." tone="light">
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.carouselTrack}>
+          <View style={[styles.carouselPanel, styles.carouselPanelNavy]}>
+            <Text style={styles.carouselEyebrow}>Live coach</Text>
+            <Text style={styles.carouselTitleLight}>{aiStatus === 'ready' ? 'Personalized guidance is active' : aiStatus === 'loading' ? 'Refreshing your guidance' : 'Fallback coach is protecting the day'}</Text>
+            <Text style={styles.carouselBodyLight}>{liveCoaching?.reasoningSummary ?? aiMessage}</Text>
+            <Text style={styles.carouselMetaLight}>{liveCoaching ? `Updated ${new Date(liveCoaching.generatedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : 'Using on-device planning logic right now'}</Text>
+          </View>
+
+          <View style={[styles.carouselPanel, styles.carouselPanelWarm]}>
+            <Text style={styles.carouselEyebrowDark}>Best move</Text>
+            <Text style={styles.carouselTitleDark}>{topTask ? topTask.title : 'Keep the day lighter than your instincts want.'}</Text>
+            <Text style={styles.carouselBodyDark}>
+              {topTask
+                ? `${topTask.energyCost} energy • ${topTask.estimatedMinutes} min • priority ${topTask.priorityScore}`
+                : 'When your state is unstable, protecting recovery is more valuable than filling every open slot.'}
+            </Text>
+            <Text style={styles.carouselMetaDark}>{topTask ? 'Recommended anchor task' : 'Paceframe is asking for restraint today'}</Text>
+          </View>
+
+          <View style={[styles.carouselPanel, styles.carouselPanelTeal]}>
+            <Text style={styles.carouselEyebrowDark}>Weekly experiment</Text>
+            <Text style={styles.carouselTitleDark}>{weeklyInsight.title}</Text>
+            <Text style={styles.carouselBodyDark}>{weeklyInsight.experiment}</Text>
+            <Text style={styles.carouselMetaDark}>{weeklyInsight.summary}</Text>
+          </View>
+        </ScrollView>
+      </Card>
+
       <Card title="Care anchors for today" subtitle="The basics that keep the rest of the day from becoming damage control." tone="light">
         <View style={styles.metricsGrid}>
           <MetricPill label="Meals" value={`${dashboard.carePlan.mealsDone}/${dashboard.carePlan.mealsTarget}`} />
@@ -97,11 +118,13 @@ export function OverviewScreen({
       </Card>
 
       <Card title="Keep these in view" subtitle="Small non-negotiables that protect your capacity while you work." tone="lime">
-        {essentials.map((item) => (
-          <View key={item} style={styles.simpleRow}>
-            <Text style={styles.listTitle}>{item}</Text>
-          </View>
-        ))}
+        <View style={styles.essentialsWrap}>
+          {essentials.map((item) => (
+            <View key={item} style={styles.essentialChip}>
+              <Text style={styles.essentialChipLabel}>{item}</Text>
+            </View>
+          ))}
+        </View>
       </Card>
 
       <Card title="Upcoming reminders" subtitle="The next prompts designed to interrupt autopilot before it turns into burnout." tone="navy">

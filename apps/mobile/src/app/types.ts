@@ -2,23 +2,31 @@ import type { User } from 'firebase/auth';
 import type {
   AICoachCard,
   LiveCoachingBundle,
+  LiveAssistantReply,
   BurnoutSignal,
   CrashWindow,
   DashboardState,
   DailyBrief,
   EnergyLevel,
   PlanningStyle,
-  PrioritizedTask,
   ReminderItem,
+  TodayPlan,
   WeeklyInsight,
   WeeklySummary
 } from '@paceframe/shared';
 
-export type Tab = 'overview' | 'plan' | 'checkin' | 'reset' | 'account';
+export type Tab = 'overview' | 'assistant' | 'plan' | 'checkin' | 'reset' | 'account';
 export type AuthMode = 'signup' | 'signin' | 'reset';
 export type AuthStatus = 'idle' | 'working' | 'sent' | 'error';
 export type SyncStatus = 'idle' | 'syncing' | 'synced' | 'error' | 'setup';
 export type AIStatus = 'idle' | 'loading' | 'ready' | 'error';
+
+export interface AssistantThreadItem {
+  id: string;
+  role: 'user' | 'assistant';
+  text: string;
+  meta?: string;
+}
 
 export interface PaceframeAppController {
   dashboard: DashboardState;
@@ -41,13 +49,15 @@ export interface PaceframeAppController {
   aiStatus: AIStatus;
   aiMessage: string;
   liveCoaching: LiveCoachingBundle | null;
+  assistantStatus: AIStatus;
+  assistantMessage: string;
+  assistantPrompt: string;
+  setAssistantPrompt: (value: string) => void;
+  assistantReply: LiveAssistantReply | null;
+  assistantHistory: AssistantThreadItem[];
   user: User | null;
   isReady: boolean;
-  plan: {
-    prioritizedTasks: PrioritizedTask[];
-    recoveryBlocks: Array<{ label: string; window: string }>;
-    essentials: string[];
-  };
+  plan: TodayPlan;
   burnoutSignal: BurnoutSignal;
   aiCoach: AICoachCard;
   dailyBrief: DailyBrief;
@@ -75,4 +85,6 @@ export interface PaceframeAppController {
   completeOnboarding: () => void;
   retryCloudSync: () => void;
   retryLiveCoaching: () => void;
+  selectEnergyLane: (level: EnergyLevel) => void;
+  submitAssistantQuestion: (promptOverride?: string) => Promise<void>;
 }

@@ -18,7 +18,9 @@ export function NavigationTabs({
           onPress={() => onSelect(tab.key)}
           style={[styles.tab, activeTab === tab.key ? styles.tabActive : undefined]}
         >
-          <Text style={[styles.tabLabel, activeTab === tab.key ? styles.tabLabelActive : undefined]}>{tab.label}</Text>
+          <Text numberOfLines={1} style={[styles.tabLabel, activeTab === tab.key ? styles.tabLabelActive : undefined]}>
+            {tab.label}
+          </Text>
         </Pressable>
       ))}
     </View>

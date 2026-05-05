@@ -29,10 +29,78 @@ function currentEnergyWeight(level: EnergyLevel) {
   return energyWeight[level];
 }
 
+const energyLaneFallbackOrder: Record<EnergyLevel, EnergyLevel[]> = {
+  high: ['high', 'medium', 'low'],
+  medium: ['medium', 'low', 'high'],
+  low: ['low', 'medium', 'high']
+};
+
 export function buildTodayPlan(state: DashboardState): TodayPlan {
+  const prioritizedTasks = rankPendingTasks(state);
+  const burnout = getBurnoutSignal(state.energyState);
+  const recoveryBlocks = buildRecoveryBlocks(state.energyState, state.profile);
+  const essentials = buildEssentials(state.energyState, state.checkIn);
+
+  if (prioritizedTasks.length === 0) {
+    return {
+      prioritizedTasks,
+      visiblePriorityTasks: [],
+      leadTask: null,
+      activeEnergyLane: null,
+      fallbackLaneUsed: null,
+      needsEnergyConfirmation: false,
+      recoveryBlocks,
+      essentials
+    };
+  }
+
+  if (burnout.level === 'high') {
+    return {
+      prioritizedTasks,
+      visiblePriorityTasks: prioritizedTasks,
+      leadTask: prioritizedTasks[0] ?? null,
+      activeEnergyLane: null,
+      fallbackLaneUsed: null,
+      needsEnergyConfirmation: false,
+      recoveryBlocks,
+      essentials
+    };
+  }
+
+  const needsEnergyConfirmation = state.taskFlow.needsEnergyConfirmation || !state.taskFlow.selectedEnergyLane;
+
+  if (needsEnergyConfirmation) {
+    return {
+      prioritizedTasks,
+      visiblePriorityTasks: [],
+      leadTask: null,
+      activeEnergyLane: null,
+      fallbackLaneUsed: null,
+      needsEnergyConfirmation: true,
+      recoveryBlocks,
+      essentials
+    };
+  }
+
+  const requestedLane = state.taskFlow.selectedEnergyLane ?? state.energyState.energy;
+  const { visibleTasks, resolvedLane } = resolveTasksForEnergyLane(prioritizedTasks, requestedLane);
+
+  return {
+    prioritizedTasks,
+    visiblePriorityTasks: visibleTasks,
+    leadTask: visibleTasks[0] ?? null,
+    activeEnergyLane: resolvedLane,
+    fallbackLaneUsed: resolvedLane !== requestedLane ? resolvedLane : null,
+    needsEnergyConfirmation: false,
+    recoveryBlocks,
+    essentials
+  };
+}
+
+function rankPendingTasks(state: DashboardState): PrioritizedTask[] {
   const availableEnergy = currentEnergyWeight(state.energyState.energy);
 
-  const prioritizedTasks: PrioritizedTask[] = state.tasks
+  return state.tasks
     .filter((task) => task.status === 'pending')
     .map((task) => {
       const fitBonus = availableEnergy >= currentEnergyWeight(task.energyCost) ? 4 : -3;
@@ -51,11 +119,24 @@ export function buildTodayPlan(state: DashboardState): TodayPlan {
       return { ...task, priorityScore };
     })
     .sort((left, right) => right.priorityScore - left.priorityScore);
+}
+
+function resolveTasksForEnergyLane(tasks: PrioritizedTask[], requestedLane: EnergyLevel) {
+  const candidateLanes = energyLaneFallbackOrder[requestedLane];
+
+  for (const lane of candidateLanes) {
+    const matchingTasks = tasks.filter((task) => task.energyCost === lane);
+    if (matchingTasks.length > 0) {
+      return {
+        visibleTasks: matchingTasks,
+        resolvedLane: lane
+      };
+    }
+  }
 
   return {
-    prioritizedTasks,
-    recoveryBlocks: buildRecoveryBlocks(state.energyState, state.profile),
-    essentials: buildEssentials(state.energyState, state.checkIn)
+    visibleTasks: tasks,
+    resolvedLane: requestedLane
   };
 }
 
@@ -162,7 +243,16 @@ export function buildWeeklyInsight(state: DashboardState): WeeklyInsight {
 export function buildAICoachCard(state: DashboardState): AICoachCard {
   const burnout = getBurnoutSignal(state.energyState);
   const plan = buildTodayPlan(state);
-  const topTask = plan.prioritizedTasks[0];
+  const topTask = plan.leadTask ?? plan.prioritizedTasks[0];
+
+  if (plan.needsEnergyConfirmation) {
+    return {
+      title: 'AI coach says: pick your current energy before you choose the work',
+      message: 'Paceframe needs a quick high, medium, or low energy check so it can show the safest next task instead of assuming too much.',
+      nextAction: 'Open the Plan tab and choose your current energy lane before starting the next block.',
+      protectBoundary: 'Do not commit to the next task until the lane matches your real capacity.'
+    };
+  }
 
   if (burnout.level === 'high') {
     return {
@@ -193,7 +283,17 @@ export function buildAICoachCard(state: DashboardState): AICoachCard {
 export function buildDailyBrief(state: DashboardState): DailyBrief {
   const plan = buildTodayPlan(state);
   const coach = buildAICoachCard(state);
-  const topTask = plan.prioritizedTasks[0];
+  const topTask = plan.leadTask ?? plan.prioritizedTasks[0];
+
+  if (plan.needsEnergyConfirmation) {
+    return {
+      headline: coach.title,
+      focusBlock: 'Choose high, medium, or low energy in the Plan tab before Paceframe recommends the next task.',
+      recoveryAnchor: plan.recoveryBlocks[0]
+        ? `${plan.recoveryBlocks[0].label} — ${plan.recoveryBlocks[0].window}.`
+        : 'Take one intentional no-phone recovery block today.'
+    };
+  }
 
   return {
     headline: coach.title,
@@ -398,6 +498,10 @@ export function mergeDashboardState(input: Partial<DashboardState> | null | unde
     reflection: {
       ...mockDashboard.reflection,
       ...(input?.reflection ?? {})
+    },
+    taskFlow: {
+      ...mockDashboard.taskFlow,
+      ...(input?.taskFlow ?? {})
     },
     tasks: Array.isArray(input?.tasks) ? input.tasks : mockDashboard.tasks,
     routines: Array.isArray(input?.routines) ? input.routines : mockDashboard.routines,

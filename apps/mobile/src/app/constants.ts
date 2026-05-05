@@ -4,11 +4,12 @@ import type { Tab } from './types';
 export const STORAGE_KEY = 'paceframe-dashboard-v1';
 
 export const tabs: Array<{ key: Tab; label: string }> = [
-  { key: 'overview', label: 'Overview' },
+  { key: 'overview', label: 'Today' },
+  { key: 'assistant', label: 'Coach' },
   { key: 'plan', label: 'Plan' },
-  { key: 'checkin', label: 'Check-in' },
-  { key: 'reset', label: 'Reset' },
-  { key: 'account', label: 'Account' }
+  { key: 'checkin', label: 'Signals' },
+  { key: 'reset', label: 'Recover' },
+  { key: 'account', label: 'You' }
 ];
 
 export const energyLevels: EnergyLevel[] = ['low', 'medium', 'high'];

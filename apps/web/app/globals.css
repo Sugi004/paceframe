@@ -338,6 +338,9 @@ body {
 }
 
 .mode-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(255, 255, 255, 0.06);
   color: rgba(255, 255, 255, 0.76);
@@ -346,6 +349,7 @@ body {
   font: inherit;
   font-weight: 700;
   cursor: pointer;
+  text-decoration: none;
   transition: transform 140ms ease, background 140ms ease, color 140ms ease;
 }
 

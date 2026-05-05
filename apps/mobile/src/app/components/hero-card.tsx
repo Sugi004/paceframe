@@ -1,4 +1,5 @@
-import { Text, View } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { Animated, Text, View } from 'react-native';
 import { styles } from '../styles';
 
 export function HeroCard({
@@ -18,6 +19,31 @@ export function HeroCard({
   burnoutSummary: string;
   careConsistency: number;
 }) {
+  const float = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(float, {
+          toValue: 1,
+          duration: 2400,
+          useNativeDriver: true
+        }),
+        Animated.timing(float, {
+          toValue: 0,
+          duration: 2400,
+          useNativeDriver: true
+        })
+      ])
+    );
+
+    animation.start();
+
+    return () => {
+      animation.stop();
+    };
+  }, [float]);
+
   const title = firstName?.trim()
     ? `${firstName}, plan your day around your energy.`
     : 'Plan your day around your energy, not just pressure.';
@@ -27,6 +53,67 @@ export function HeroCard({
 
   return (
     <View style={styles.heroCard}>
+      <Animated.View
+        style={[
+          styles.heroGlowLarge,
+          {
+            transform: [
+              {
+                translateY: float.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, -10]
+                })
+              }
+            ]
+          }
+        ]}
+      />
+      <Animated.View
+        style={[
+          styles.heroGlowSmall,
+          {
+            transform: [
+              {
+                translateY: float.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, 8]
+                })
+              }
+            ]
+          }
+        ]}
+      />
+      <Animated.View
+        style={[
+          styles.heroFloatingMiniCard,
+          {
+            transform: [
+              { perspective: 800 },
+              {
+                translateY: float.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, -8]
+                })
+              },
+              {
+                rotateY: float.interpolate({
+                  inputRange: [0, 0.5, 1],
+                  outputRange: ['-4deg', '0deg', '4deg']
+                })
+              },
+              {
+                rotateX: float.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ['2deg', '-2deg']
+                })
+              }
+            ]
+          }
+        ]}
+      >
+        <Text style={styles.heroFloatingMiniLabel}>AI rhythm</Text>
+        <Text style={styles.heroFloatingMiniValue}>{burnoutScore < 45 ? 'stable' : burnoutScore < 70 ? 'guarded' : 'recovery first'}</Text>
+      </Animated.View>
       <Text style={styles.heroEyebrow}>PACEFRAME</Text>
       <Text style={styles.heroTitle}>{title}</Text>
       <Text style={styles.heroSubtitle}>{subtitle}</Text>

@@ -1,5 +1,3 @@
-import OpenAI from 'openai';
-import { zodTextFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
 import {
   buildAICoachCard,
@@ -10,37 +8,19 @@ import {
   mergeDashboardState,
   type DashboardState
 } from '@paceframe/shared';
+import {
+  coachJsonSchema,
+  coachResponseSchema,
+  generateStructuredAI,
+  getGeminiModel,
+  getGroqModel,
+  normalizeAIError
+} from '../../../../src/lib/gemini';
 
 const requestSchema = z.object({
   dashboard: z.unknown(),
   userEmail: z.string().email().nullable().optional()
 });
-
-const responseSchema = z.object({
-  aiCoach: z.object({
-    title: z.string(),
-    message: z.string(),
-    nextAction: z.string(),
-    protectBoundary: z.string()
-  }),
-  dailyBrief: z.object({
-    headline: z.string(),
-    focusBlock: z.string(),
-    recoveryAnchor: z.string()
-  }),
-  weeklyInsight: z.object({
-    title: z.string(),
-    summary: z.string(),
-    experiment: z.string()
-  }),
-  reasoningSummary: z.string()
-});
-
-const openaiApiKey = process.env.OPENAI_API_KEY;
-const model = process.env.OPENAI_COACH_MODEL ?? 'gpt-4o-mini';
-
-const client = openaiApiKey ? new OpenAI({ apiKey: openaiApiKey }) : null;
-
 function buildCoachingPrompt(dashboard: DashboardState, userEmail?: string | null) {
   const fallbackCoach = buildAICoachCard(dashboard);
   const fallbackBrief = buildDailyBrief(dashboard);
@@ -103,45 +83,30 @@ function buildCoachingPrompt(dashboard: DashboardState, userEmail?: string | nul
 }
 
 export async function POST(request: Request) {
-  if (!client) {
-    return Response.json(
-      {
-        error: 'OPENAI_API_KEY is missing on the web server. Add it to the project environment before using live AI coaching.'
-      },
-      { status: 503 }
-    );
-  }
-
   try {
     const body = requestSchema.parse(await request.json());
     const dashboard = mergeDashboardState(body.dashboard as Partial<DashboardState>);
+    const geminiModel = getGeminiModel('GEMINI_COACH_MODEL', 'gemini-2.0-flash');
+    const groqModel = getGroqModel('GROQ_COACH_MODEL', 'openai/gpt-oss-20b');
 
-    const response = await client.responses.parse({
-      model,
-      input: buildCoachingPrompt(dashboard, body.userEmail),
-      text: {
-        format: zodTextFormat(responseSchema, 'paceframe_live_coaching')
-      }
+    const response = await generateStructuredAI({
+      geminiModel,
+      groqModel,
+      prompt: buildCoachingPrompt(dashboard, body.userEmail),
+      schema: coachResponseSchema,
+      responseSchema: coachJsonSchema,
+      schemaName: 'paceframe_coach_bundle'
     });
-
-    if (!response.output_parsed) {
-      return Response.json(
-        {
-          error: 'The AI coach did not return structured coaching.'
-        },
-        { status: 502 }
-      );
-    }
 
     return Response.json({
       data: {
-        ...response.output_parsed,
+        ...response.data,
         generatedAt: new Date().toISOString(),
-        model
+        model: `${response.provider}:${response.model}`
       }
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Live AI coaching failed.';
-    return Response.json({ error: message }, { status: 500 });
+    const normalized = normalizeAIError(error);
+    return Response.json({ error: normalized.message }, { status: normalized.status });
   }
 }

@@ -77,6 +77,11 @@ export interface ReflectionState {
   gratitude: string;
 }
 
+export interface TaskFlowState {
+  selectedEnergyLane: EnergyLevel | null;
+  needsEnergyConfirmation: boolean;
+}
+
 export interface UserProfile {
   firstName: string;
   roleLabel: string;
@@ -108,6 +113,17 @@ export interface LiveCoachingBundle {
   model: string;
 }
 
+export interface LiveAssistantReply {
+  headline: string;
+  answer: string;
+  planSteps: string[];
+  suggestedAction: string;
+  supportiveNote: string;
+  followUpQuestion: string;
+  generatedAt: string;
+  model: string;
+}
+
 export interface DashboardState {
   profile: UserProfile;
   energyState: EnergyState;
@@ -117,6 +133,7 @@ export interface DashboardState {
   reminders: ReminderItem[];
   carePlan: CarePlan;
   reflection: ReflectionState;
+  taskFlow: TaskFlowState;
   weeklyBurnoutScores: number[];
   streakDays: number;
 }
@@ -127,6 +144,11 @@ export interface PrioritizedTask extends TaskItem {
 
 export interface TodayPlan {
   prioritizedTasks: PrioritizedTask[];
+  visiblePriorityTasks: PrioritizedTask[];
+  leadTask: PrioritizedTask | null;
+  activeEnergyLane: EnergyLevel | null;
+  fallbackLaneUsed: EnergyLevel | null;
+  needsEnergyConfirmation: boolean;
   recoveryBlocks: RecoveryBlock[];
   essentials: string[];
 }
