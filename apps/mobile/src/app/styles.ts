@@ -726,6 +726,26 @@ export const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 18
   },
+  energyConfirmModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(4, 10, 20, 0.72)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20
+  },
+  energyConfirmModalCard: {
+    width: '100%',
+    borderRadius: 28,
+    padding: 22,
+    backgroundColor: '#102347',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    shadowColor: '#061024',
+    shadowOpacity: 0.28,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 10
+  },
   aiCoachBox: {
     marginTop: 14,
     backgroundColor: '#163056',

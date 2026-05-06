@@ -5,6 +5,7 @@ import {
   buildWeeklySummary,
   calculateCareConsistency,
   completeTask,
+  createTask,
   getBurnoutSignal,
   mergeDashboardState,
   mockDashboard
@@ -21,7 +22,7 @@ describe('planning engine', () => {
     expect(plan.essentials.length).toBeGreaterThan(1);
   });
 
-  it('skips energy confirmation on high burnout days and keeps the protective ranking visible', () => {
+  it('requires energy confirmation even on high burnout days until the user picks a lane', () => {
     const highBurnoutState = mergeDashboardState({
       energyState: {
         ...mockDashboard.energyState,
@@ -37,12 +38,12 @@ describe('planning engine', () => {
 
     const plan = buildTodayPlan(highBurnoutState);
 
-    expect(plan.needsEnergyConfirmation).toBe(false);
-    expect(plan.leadTask?.title).toBe('Refine onboarding copy');
-    expect(plan.visiblePriorityTasks[0]?.title).toBe('Refine onboarding copy');
+    expect(plan.needsEnergyConfirmation).toBe(true);
+    expect(plan.leadTask).toBeNull();
+    expect(plan.visiblePriorityTasks).toHaveLength(0);
   });
 
-  it('filters the visible priority stack to the selected energy lane', () => {
+  it('reorders the visible priority stack to put the selected energy lane first', () => {
     const laneSelectedState = mergeDashboardState({
       taskFlow: {
         selectedEnergyLane: 'high',
@@ -55,7 +56,7 @@ describe('planning engine', () => {
     expect(plan.needsEnergyConfirmation).toBe(false);
     expect(plan.activeEnergyLane).toBe('high');
     expect(plan.leadTask?.title).toBe('Prepare investor update');
-    expect(plan.visiblePriorityTasks.every((task) => task.energyCost === 'high')).toBe(true);
+    expect(plan.visiblePriorityTasks.map((task) => task.energyCost)).toEqual(['high', 'medium']);
   });
 
   it('falls back to the nearest lane when the selected lane has no matching tasks', () => {
@@ -90,8 +91,53 @@ describe('planning engine', () => {
 
     expect(plan.activeEnergyLane).toBe('medium');
     expect(plan.fallbackLaneUsed).toBe('medium');
-    expect(plan.visiblePriorityTasks).toHaveLength(1);
-    expect(plan.visiblePriorityTasks[0]?.title).toBe('Refine launch copy');
+    expect(plan.visiblePriorityTasks).toHaveLength(2);
+    expect(plan.visiblePriorityTasks.map((task) => task.title)).toEqual([
+      'Refine launch copy',
+      'Deep strategy review'
+    ]);
+  });
+
+  it('breaks priority ties in a deterministic order instead of using insertion order', () => {
+    const tiedState = mergeDashboardState({
+      energyState: {
+        ...mockDashboard.energyState,
+        stressLevel: 3,
+        screenFatigue: 3,
+        sleepQuality: 8
+      },
+      taskFlow: {
+        selectedEnergyLane: 'medium',
+        needsEnergyConfirmation: false
+      },
+      tasks: [
+        {
+          id: 'task-z',
+          title: 'Lower urgency medium task',
+          urgency: 6,
+          importance: 7,
+          energyCost: 'medium',
+          estimatedMinutes: 40,
+          status: 'pending'
+        },
+        {
+          id: 'task-a',
+          title: 'Higher urgency medium task',
+          urgency: 8,
+          importance: 7,
+          energyCost: 'medium',
+          estimatedMinutes: 40,
+          status: 'pending'
+        }
+      ]
+    });
+
+    const plan = buildTodayPlan(tiedState);
+
+    expect(plan.visiblePriorityTasks.map((task) => task.title)).toEqual([
+      'Higher urgency medium task',
+      'Lower urgency medium task'
+    ]);
   });
 
   it('detects elevated burnout risk from stress, screen fatigue, and sleep loss', () => {
@@ -127,6 +173,28 @@ describe('planning engine', () => {
     expect(coach.nextAction.toLowerCase()).toContain('plan tab');
   });
 
+  it('supports different default task durations by energy lane', () => {
+    expect(
+      createTask({
+        title: 'High energy task',
+        urgency: 8,
+        importance: 9,
+        energyCost: 'high',
+        estimatedMinutes: 90
+      }).estimatedMinutes
+    ).toBe(90);
+
+    expect(
+      createTask({
+        title: 'Medium energy task',
+        urgency: 7,
+        importance: 7,
+        energyCost: 'medium',
+        estimatedMinutes: 45
+      }).estimatedMinutes
+    ).toBe(45);
+  });
+
   it('merges older saved dashboard data with current defaults', () => {
     const merged = mergeDashboardState({
       energyState: {
@@ -137,7 +205,26 @@ describe('planning engine', () => {
         screenFatigue: 7,
         movementMinutes: 0
       },
-      tasks: [],
+      tasks: [
+        {
+          id: 'legacy-high',
+          title: 'Legacy captured high task',
+          urgency: 7,
+          importance: 7,
+          energyCost: 'high',
+          estimatedMinutes: 45,
+          status: 'pending'
+        },
+        {
+          id: 'legacy-low',
+          title: 'Legacy captured low task',
+          urgency: 7,
+          importance: 7,
+          energyCost: 'low',
+          estimatedMinutes: 45,
+          status: 'pending'
+        }
+      ],
       checkIn: {
         mood: 4,
         stressLevel: 8,
@@ -151,6 +238,8 @@ describe('planning engine', () => {
     expect(merged.carePlan.hydrationTarget).toBe(mockDashboard.carePlan.hydrationTarget);
     expect(merged.reflection.intention).toBe(mockDashboard.reflection.intention);
     expect(merged.taskFlow.needsEnergyConfirmation).toBe(true);
+    expect(merged.tasks[0]?.estimatedMinutes).toBe(90);
+    expect(merged.tasks[1]?.estimatedMinutes).toBe(20);
     expect(merged.energyState.focusLabel).toBe('Old saved state');
   });
 });

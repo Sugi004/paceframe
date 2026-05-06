@@ -37,7 +37,6 @@ const energyLaneFallbackOrder: Record<EnergyLevel, EnergyLevel[]> = {
 
 export function buildTodayPlan(state: DashboardState): TodayPlan {
   const prioritizedTasks = rankPendingTasks(state);
-  const burnout = getBurnoutSignal(state.energyState);
   const recoveryBlocks = buildRecoveryBlocks(state.energyState, state.profile);
   const essentials = buildEssentials(state.energyState, state.checkIn);
 
@@ -46,19 +45,6 @@ export function buildTodayPlan(state: DashboardState): TodayPlan {
       prioritizedTasks,
       visiblePriorityTasks: [],
       leadTask: null,
-      activeEnergyLane: null,
-      fallbackLaneUsed: null,
-      needsEnergyConfirmation: false,
-      recoveryBlocks,
-      essentials
-    };
-  }
-
-  if (burnout.level === 'high') {
-    return {
-      prioritizedTasks,
-      visiblePriorityTasks: prioritizedTasks,
-      leadTask: prioritizedTasks[0] ?? null,
       activeEnergyLane: null,
       fallbackLaneUsed: null,
       needsEnergyConfirmation: false,
@@ -118,25 +104,24 @@ function rankPendingTasks(state: DashboardState): PrioritizedTask[] {
       const priorityScore = task.urgency * 2 + task.importance * 3 + fitBonus + planningStyleBonus + recoveryPenalty + fatiguePenalty;
       return { ...task, priorityScore };
     })
-    .sort((left, right) => right.priorityScore - left.priorityScore);
+    .sort(
+      (left, right) =>
+        right.priorityScore - left.priorityScore ||
+        right.importance - left.importance ||
+        right.urgency - left.urgency ||
+        right.estimatedMinutes - left.estimatedMinutes ||
+        left.title.localeCompare(right.title)
+    );
 }
 
 function resolveTasksForEnergyLane(tasks: PrioritizedTask[], requestedLane: EnergyLevel) {
   const candidateLanes = energyLaneFallbackOrder[requestedLane];
-
-  for (const lane of candidateLanes) {
-    const matchingTasks = tasks.filter((task) => task.energyCost === lane);
-    if (matchingTasks.length > 0) {
-      return {
-        visibleTasks: matchingTasks,
-        resolvedLane: lane
-      };
-    }
-  }
+  const resolvedLane = candidateLanes.find((lane) => tasks.some((task) => task.energyCost === lane)) ?? requestedLane;
+  const orderedTasks = candidateLanes.flatMap((lane) => tasks.filter((task) => task.energyCost === lane));
 
   return {
-    visibleTasks: tasks,
-    resolvedLane: requestedLane
+    visibleTasks: orderedTasks,
+    resolvedLane
   };
 }
 
@@ -503,12 +488,38 @@ export function mergeDashboardState(input: Partial<DashboardState> | null | unde
       ...mockDashboard.taskFlow,
       ...(input?.taskFlow ?? {})
     },
-    tasks: Array.isArray(input?.tasks) ? input.tasks : mockDashboard.tasks,
+    tasks: Array.isArray(input?.tasks) ? input.tasks.map(normalizeLegacyQuickCaptureTask) : mockDashboard.tasks,
     routines: Array.isArray(input?.routines) ? input.routines : mockDashboard.routines,
     reminders: Array.isArray(input?.reminders) ? input.reminders : mockDashboard.reminders,
     weeklyBurnoutScores: Array.isArray(input?.weeklyBurnoutScores) ? input.weeklyBurnoutScores : mockDashboard.weeklyBurnoutScores,
     streakDays: typeof input?.streakDays === 'number' ? input.streakDays : mockDashboard.streakDays
   };
+}
+
+function normalizeLegacyQuickCaptureTask(task: TaskItem): TaskItem {
+  if (task.estimatedMinutes !== 45 || task.urgency !== 7 || task.importance !== 7) {
+    return task;
+  }
+
+  if (task.energyCost === 'high') {
+    return {
+      ...task,
+      urgency: 8,
+      importance: 9,
+      estimatedMinutes: 90
+    };
+  }
+
+  if (task.energyCost === 'low') {
+    return {
+      ...task,
+      urgency: 5,
+      importance: 5,
+      estimatedMinutes: 20
+    };
+  }
+
+  return task;
 }
 
 function clampNumber(value: number, min: number, max: number) {

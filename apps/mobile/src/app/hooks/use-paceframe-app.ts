@@ -49,6 +49,24 @@ let lastGlobalCoachingRequestKey = '';
 let lastGlobalCoachingRequestAt = 0;
 let lastGlobalQuotaBackoffUntil = 0;
 
+const taskDefaultsByEnergy: Record<EnergyLevel, { urgency: number; importance: number; estimatedMinutes: number }> = {
+  high: {
+    urgency: 8,
+    importance: 9,
+    estimatedMinutes: 90
+  },
+  medium: {
+    urgency: 7,
+    importance: 7,
+    estimatedMinutes: 45
+  },
+  low: {
+    urgency: 5,
+    importance: 5,
+    estimatedMinutes: 20
+  }
+};
+
 export function usePaceframeApp(): PaceframeAppController {
   const [dashboard, setDashboard] = useState<DashboardState>(mockDashboard);
   const [activeTab, setActiveTab] = useState<PaceframeAppController['activeTab']>('overview');
@@ -351,15 +369,17 @@ export function usePaceframeApp(): PaceframeAppController {
       return;
     }
 
+    const taskDefaults = taskDefaultsByEnergy[newTaskEnergy];
+
     setDashboard((current) => ({
       ...current,
       tasks: [
         createTask({
           title: newTaskTitle,
-          urgency: 7,
-          importance: 7,
+          urgency: taskDefaults.urgency,
+          importance: taskDefaults.importance,
           energyCost: newTaskEnergy,
-          estimatedMinutes: 45
+          estimatedMinutes: taskDefaults.estimatedMinutes
         }),
         ...current.tasks
       ]
@@ -384,21 +404,13 @@ export function usePaceframeApp(): PaceframeAppController {
         };
       }
 
-      const burnout = getBurnoutSignal(current.energyState);
-
       return {
         ...current,
         tasks: nextTasks,
-        taskFlow:
-          burnout.level === 'high'
-            ? {
-                selectedEnergyLane: null,
-                needsEnergyConfirmation: false
-              }
-            : {
-                selectedEnergyLane: null,
-                needsEnergyConfirmation: true
-              }
+        taskFlow: {
+          selectedEnergyLane: null,
+          needsEnergyConfirmation: true
+        }
       };
     });
   }
@@ -517,6 +529,29 @@ export function usePaceframeApp(): PaceframeAppController {
         needsEnergyConfirmation: false
       }
     }));
+  }
+
+  function handleTabChange(tab: PaceframeAppController['activeTab']) {
+    setActiveTab(tab);
+
+    if (tab !== 'plan') {
+      return;
+    }
+
+    setDashboard((current) => {
+      const pendingTasks = current.tasks.filter((task) => task.status === 'pending');
+      if (pendingTasks.length === 0) {
+        return current;
+      }
+
+      return {
+        ...current,
+        taskFlow: {
+          selectedEnergyLane: null,
+          needsEnergyConfirmation: true
+        }
+      };
+    });
   }
 
   async function submitAssistantQuestion(promptOverride?: string) {
@@ -665,7 +700,7 @@ export function usePaceframeApp(): PaceframeAppController {
   return {
     dashboard,
     activeTab,
-    setActiveTab,
+    setActiveTab: handleTabChange,
     newTaskTitle,
     setNewTaskTitle,
     newTaskEnergy,

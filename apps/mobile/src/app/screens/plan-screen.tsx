@@ -1,8 +1,15 @@
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { energyLevels } from '../constants';
 import { Card, PageIntro } from '../components/primitives';
 import { styles } from '../styles';
 import type { PaceframeAppController } from '../types';
+
+const planEnergyLevels = ['high', 'medium', 'low'] as const;
+const laneSequencingCopy = {
+  high: 'High-energy tasks are first, medium-energy tasks come next, and low-energy tasks are last.',
+  medium: 'Medium-energy tasks are first, low-energy tasks come next, and high-energy tasks are last.',
+  low: 'Low-energy tasks are first, medium-energy tasks come next, and high-energy tasks are last.'
+} as const;
 
 type PlanScreenProps = Pick<
   PaceframeAppController,
@@ -23,10 +30,10 @@ export function PlanScreen({
   selectEnergyLane
 }: PlanScreenProps) {
   const laneTasks = plan.visiblePriorityTasks;
-  const topThree = laneTasks.slice(0, 3);
-  const [primaryTask, ...secondaryTasks] = topThree;
+  const focusLaneTasks = laneTasks.slice(0, 3);
   const selectedLane = dashboard.taskFlow.selectedEnergyLane;
   const laneLabel = plan.activeEnergyLane ? `${plan.activeEnergyLane} energy lane` : 'protective lane';
+  const laneSequenceMessage = plan.activeEnergyLane ? laneSequencingCopy[plan.activeEnergyLane] : null;
   const fallbackMessage =
     selectedLane && plan.fallbackLaneUsed
       ? `No ${selectedLane}-energy tasks were left, so Paceframe shifted to ${plan.fallbackLaneUsed}.`
@@ -40,57 +47,19 @@ export function PlanScreen({
       />
 
       <Card title="Focus lanes" subtitle="Swipe through the strongest tasks before you decide what deserves your best energy." tone="navy">
-        {plan.needsEnergyConfirmation ? (
-          <View style={styles.energyConfirmCard}>
-            <Text style={styles.energyConfirmEyebrow}>Choose your current energy</Text>
-            <Text style={styles.energyConfirmTitle}>How much energy do you actually have right now?</Text>
-            <Text style={styles.energyConfirmBody}>
-              Pick high, medium, or low so Paceframe can choose the next task from the right lane instead of guessing.
-            </Text>
-            <View style={styles.energyConfirmRow}>
-              {energyLevels.map((level) => (
-                <Pressable
-                  key={level}
-                  onPress={() => selectEnergyLane(level)}
-                  style={[styles.energyConfirmSegment, selectedLane === level ? styles.energyConfirmSegmentActive : undefined]}
-                >
-                  <Text
-                    style={[
-                      styles.energyConfirmSegmentLabel,
-                      selectedLane === level ? styles.energyConfirmSegmentLabelActive : undefined
-                    ]}
-                  >
-                    {level}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-            <Text style={styles.energyConfirmFootnote}>Paceframe will update the full plan after you confirm the lane.</Text>
-          </View>
-        ) : primaryTask ? (
-          <View style={[styles.focusLanePrimary, styles.carouselPanelWarm]}>
-            <Text style={styles.carouselEyebrowDark}>Start here</Text>
-            <Text style={styles.carouselTitleDark}>{primaryTask.title}</Text>
-            <Text style={styles.carouselBodyDark}>
-              {primaryTask.energyCost} energy • {primaryTask.estimatedMinutes} min • priority {primaryTask.priorityScore}
-            </Text>
-            <Pressable onPress={() => markTaskDone(primaryTask.id)} style={styles.carouselActionPill}>
-              <Text style={styles.carouselActionPillLabel}>Mark done</Text>
-            </Pressable>
-          </View>
-        ) : null}
-
-        {!plan.needsEnergyConfirmation && secondaryTasks.length > 0 ? (
+        {!plan.needsEnergyConfirmation && focusLaneTasks.length > 0 ? (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.focusLaneSecondaryTrack}>
-            {secondaryTasks.map((task, index) => (
+            {focusLaneTasks.map((task, index) => (
               <View
                 key={task.id}
                 style={[
                   styles.carouselPanel,
-                  index === 0 ? styles.carouselPanelTeal : styles.carouselPanelLime
+                  index === 0 ? styles.carouselPanelWarm : index === 1 ? styles.carouselPanelTeal : styles.carouselPanelLime
                 ]}
               >
-                <Text style={styles.carouselEyebrowDark}>{index === 0 ? 'Then move here' : 'Protect for later'}</Text>
+                <Text style={styles.carouselEyebrowDark}>
+                  {index === 0 ? 'Start here' : index === 1 ? 'Then move here' : 'Protect for later'}
+                </Text>
                 <Text style={styles.carouselTitleDark}>{task.title}</Text>
                 <Text style={styles.carouselBodyDark}>
                   {task.energyCost} energy • {task.estimatedMinutes} min • priority {task.priorityScore}
@@ -101,6 +70,10 @@ export function PlanScreen({
               </View>
             ))}
           </ScrollView>
+        ) : plan.needsEnergyConfirmation ? (
+          <View style={styles.simpleRowDark}>
+            <Text style={styles.inverseBody}>Choose your current energy in the popup to unlock today&apos;s task order.</Text>
+          </View>
         ) : null}
       </Card>
 
@@ -109,7 +82,7 @@ export function PlanScreen({
         subtitle={
           plan.needsEnergyConfirmation
             ? 'Choose your current energy to reveal the right task lane.'
-            : fallbackMessage ?? `Showing the ${laneLabel} based on urgency, importance, energy fit, and recovery cost.`
+            : fallbackMessage ?? laneSequenceMessage ?? `Showing the ${laneLabel}, ordered from highest priority to lowest priority using urgency, importance, energy fit, and recovery cost.`
         }
         tone="light"
       >
@@ -191,6 +164,37 @@ export function PlanScreen({
           ))}
         </Card>
       ) : null}
+
+      <Modal visible={plan.needsEnergyConfirmation} transparent animationType="fade" onRequestClose={() => undefined}>
+        <View style={styles.energyConfirmModalOverlay}>
+          <View style={styles.energyConfirmModalCard}>
+            <Text style={styles.energyConfirmEyebrow}>Energy check</Text>
+            <Text style={styles.energyConfirmTitle}>How much energy do you have right now?</Text>
+            <Text style={styles.energyConfirmBody}>
+              Paceframe needs this before showing tasks. Once you choose a lane, the planner will order work by that energy level and block you from adding anything until it knows your capacity.
+            </Text>
+            <View style={styles.energyConfirmRow}>
+              {planEnergyLevels.map((level) => (
+                <Pressable
+                  key={level}
+                  onPress={() => selectEnergyLane(level)}
+                  style={[styles.energyConfirmSegment, selectedLane === level ? styles.energyConfirmSegmentActive : undefined]}
+                >
+                  <Text
+                    style={[
+                      styles.energyConfirmSegmentLabel,
+                      selectedLane === level ? styles.energyConfirmSegmentLabelActive : undefined
+                    ]}
+                  >
+                    {level}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+            <Text style={styles.energyConfirmFootnote}>High puts high-energy tasks first. Medium starts with medium. Low starts with low.</Text>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
