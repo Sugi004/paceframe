@@ -14,11 +14,13 @@ export function getAuthModeMessage(mode: AuthMode) {
 
 export function formatAuthErrorMessage(error: unknown, mode: AuthMode) {
   if (!(error instanceof Error)) {
-    return 'We could not complete that request.';
+    return 'We could not complete that request right now.';
   }
 
   if (!('code' in error) || typeof error.code !== 'string') {
-    return error.message;
+    return mode === 'reset'
+      ? 'We could not send the reset email right now. Try again in a moment.'
+      : 'We could not complete sign-in right now. Try again in a moment.';
   }
 
   switch (error.code) {
@@ -36,7 +38,9 @@ export function formatAuthErrorMessage(error: unknown, mode: AuthMode) {
     case 'auth/invalid-credential':
       return 'We could not find an account matching that email and password.';
     default:
-      return error.message;
+      return mode === 'reset'
+        ? 'We could not send the reset email right now. Try again in a moment.'
+        : 'We could not complete sign-in right now. Try again in a moment.';
   }
 }
 
@@ -62,7 +66,7 @@ export function formatSyncErrorMessage(error: unknown) {
     return 'Supabase blocked the request. Make sure Firebase third-party auth is enabled in Supabase and your Firebase tokens include the role "authenticated" claim.';
   }
 
-  return error.message;
+  return 'Cloud sync is temporarily unavailable. Your device is still working locally and you can retry later.';
 }
 
 export function isSyncSetupIssue(error: unknown) {
@@ -87,4 +91,35 @@ export function shiftTime(time: string, direction: -1 | 1) {
 
 export function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
+}
+
+export function formatAIUserMessage(error: unknown, context: 'coach' | 'assistant') {
+  const fallback =
+    context === 'coach'
+      ? 'Live AI is unavailable right now. Paceframe will keep using the built-in planner and recovery guidance.'
+      : 'Paceframe AI could not answer just now. Try asking again in a moment.';
+
+  if (!(error instanceof Error)) {
+    return fallback;
+  }
+
+  const message = error.message.toLowerCase();
+
+  if (message.includes('quota')) {
+    return 'Live AI is busy right now. Try again shortly while Paceframe keeps using your saved plan and signals.';
+  }
+
+  if (message.includes('network request failed') || message.includes('failed to fetch') || message.includes('could not reach')) {
+    return 'Live AI is offline right now. Keep the AI service running, then try again.';
+  }
+
+  if (message.includes('api key') || message.includes('provider is configured')) {
+    return 'Live AI is not configured correctly yet. Once the provider key is active, Paceframe will reconnect automatically.';
+  }
+
+  if (message.includes('outside the scope') || message.includes('paceframe can only answer')) {
+    return 'Paceframe AI can only answer from your task, energy, recovery, and reminder data.';
+  }
+
+  return fallback;
 }

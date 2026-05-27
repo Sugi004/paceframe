@@ -37,9 +37,37 @@ const config: ExpoConfig = {
   name: 'Paceframe',
   slug: 'paceframe',
   version: '1.0.0',
+  description: 'Energy-aware planning, burnout recovery, and AI coaching in one calm mobile system.',
+  scheme: 'paceframe',
   orientation: 'portrait',
   userInterfaceStyle: 'light',
+  icon: './assets/icon.png',
   assetBundlePatterns: ['**/*'],
+  plugins: [
+    [
+      'expo-notifications',
+      {
+        defaultChannel: 'paceframe-reminders'
+      }
+    ]
+  ],
+  splash: {
+    image: './assets/splash-icon.png',
+    resizeMode: 'contain',
+    backgroundColor: '#091221'
+  },
+  ios: {
+    supportsTablet: true,
+    icon: './assets/icon.png'
+  },
+  android: {
+    permissions: ['RECEIVE_BOOT_COMPLETED', 'VIBRATE'],
+    adaptiveIcon: {
+      foregroundImage: './assets/adaptive-icon-foreground.png',
+      backgroundImage: './assets/adaptive-icon-background.png',
+      monochromeImage: './assets/adaptive-icon-foreground.png'
+    }
+  },
   extra: {
     firebase: {
       apiKey: envValue('EXPO_PUBLIC_FIREBASE_API_KEY'),
@@ -55,6 +83,9 @@ const config: ExpoConfig = {
     },
     ai: {
       baseUrl: envValue('EXPO_PUBLIC_AI_API_URL')
+    },
+    notifications: {
+      defaultChannel: 'paceframe-reminders'
     }
   }
 };

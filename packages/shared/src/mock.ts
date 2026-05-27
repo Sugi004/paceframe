@@ -96,7 +96,8 @@ export const mockDashboard: DashboardState = {
   },
   taskFlow: {
     selectedEnergyLane: null,
-    needsEnergyConfirmation: true
+    needsEnergyConfirmation: true,
+    workOrderingPreference: 'paceframe'
   },
   weeklyBurnoutScores: [52, 58, 61, 49, 44, 39, 42],
   streakDays: 4,

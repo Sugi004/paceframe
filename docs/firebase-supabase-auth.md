@@ -13,3 +13,5 @@
 - Mirror the uid into profile-linked tables.
 - Never trust client-side role claims without server verification.
 - Store server-only keys in the backend or edge functions, never in the client apps.
+- In production, configure Firebase authorized domains and email-link action URLs to match the public web shell origin.
+- Keep `NEXT_PUBLIC_SITE_URL` aligned with the deployed domain so metadata, canonical tags, and auth emails point to the right place.

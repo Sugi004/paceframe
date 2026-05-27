@@ -34,14 +34,26 @@ import {
   type CrashWindow,
   type DashboardState,
   type EnergyLevel,
-  type PlanningStyle
+  type PlanningStyle,
+  type WorkOrderingPreference
 } from '@paceframe/shared';
 import { auth, hasFirebaseConfig } from '../../lib/firebase';
 import { STORAGE_KEY } from '../constants';
 import type { AuthMode, PaceframeAppController } from '../types';
-import { fetchLiveAssistantReply, fetchLiveCoaching } from '../services/ai-coaching';
+import {
+  fetchLatestAssistantThread,
+  fetchLiveAssistantReply,
+  fetchLiveCoaching,
+  persistAssistantConversation,
+  persistReviewArtifacts
+} from '../services/ai-coaching';
 import { ensureRemoteUser, loadRemoteDashboard, saveRemoteDashboard } from '../services/dashboard-sync';
-import { clamp, formatAuthErrorMessage, formatSyncErrorMessage, getAuthModeMessage, isSyncSetupIssue, shiftTime } from '../utils';
+import {
+  cancelAllReminderNotificationsAsync,
+  configureNotificationHandler,
+  syncReminderNotificationsAsync
+} from '../services/notifications';
+import { clamp, formatAIUserMessage, formatAuthErrorMessage, formatSyncErrorMessage, getAuthModeMessage, isSyncSetupIssue, shiftTime } from '../utils';
 
 const AI_REQUEST_DEDUPE_WINDOW_MS = 10_000;
 const AI_QUOTA_BACKOFF_MS = 5 * 60_000;
@@ -70,6 +82,8 @@ const taskDefaultsByEnergy: Record<EnergyLevel, { urgency: number; importance: n
 export function usePaceframeApp(): PaceframeAppController {
   const [dashboard, setDashboard] = useState<DashboardState>(mockDashboard);
   const [activeTab, setActiveTab] = useState<PaceframeAppController['activeTab']>('overview');
+  const [planEnergyGateOpen, setPlanEnergyGateOpen] = useState(false);
+  const [planSessionEnergyLane, setPlanSessionEnergyLane] = useState<EnergyLevel | null>(null);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskEnergy, setNewTaskEnergy] = useState<PaceframeAppController['newTaskEnergy']>('medium');
   const [isHydrated, setIsHydrated] = useState(false);
@@ -88,12 +102,14 @@ export function usePaceframeApp(): PaceframeAppController {
   const [assistantPrompt, setAssistantPrompt] = useState('');
   const [assistantReply, setAssistantReply] = useState<LiveAssistantReply | null>(null);
   const [assistantHistory, setAssistantHistory] = useState<PaceframeAppController['assistantHistory']>([]);
+  const [assistantConversationId, setAssistantConversationId] = useState<string | null>(null);
   const [user, setUser] = useState<PaceframeAppController['user']>(null);
   const [isAuthResolved, setIsAuthResolved] = useState(!hasFirebaseConfig);
   const [isCloudHydrated, setIsCloudHydrated] = useState(false);
   const [cloudSetupRequired, setCloudSetupRequired] = useState(false);
   const [syncAttempt, setSyncAttempt] = useState(0);
   const [aiAttempt, setAIAttempt] = useState(0);
+  const [notificationPermissionAttempted, setNotificationPermissionAttempted] = useState(false);
   const aiRefreshFingerprint = useMemo(
     () =>
       JSON.stringify({
@@ -132,6 +148,27 @@ export function usePaceframeApp(): PaceframeAppController {
 
     hydrate();
   }, []);
+
+  useEffect(() => {
+    configureNotificationHandler();
+  }, []);
+
+  useEffect(() => {
+    if (activeTab !== 'plan') {
+      return;
+    }
+
+    const hasPendingTasks = dashboard.tasks.some((task) => task.status === 'pending');
+
+    if (!hasPendingTasks) {
+      setPlanEnergyGateOpen(false);
+      setPlanSessionEnergyLane(null);
+      return;
+    }
+
+    setPlanSessionEnergyLane(null);
+    setPlanEnergyGateOpen(true);
+  }, [activeTab]);
 
   useEffect(() => {
     if (!auth) {
@@ -205,12 +242,81 @@ export function usePaceframeApp(): PaceframeAppController {
   }, [syncAttempt, user]);
 
   useEffect(() => {
+    if (!user) {
+      setAssistantConversationId(null);
+      setNotificationPermissionAttempted(false);
+      return;
+    }
+
+    if (!isHydrated || !dashboard.profile.onboardingComplete || !isCloudHydrated) {
+      return;
+    }
+
+    const currentUser = user;
+    let cancelled = false;
+
+    async function hydrateAssistantHistory() {
+      try {
+        const authToken = await currentUser.getIdToken();
+        const thread = await fetchLatestAssistantThread(authToken);
+
+        if (cancelled || !thread) {
+          return;
+        }
+
+        setAssistantConversationId(thread.conversationId);
+        setAssistantHistory(thread.messages);
+      } catch {
+        if (!cancelled) {
+          setAssistantConversationId(null);
+        }
+      }
+    }
+
+    void hydrateAssistantHistory();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [dashboard.profile.onboardingComplete, isCloudHydrated, isHydrated, user]);
+
+  useEffect(() => {
     if (!isHydrated) {
       return;
     }
 
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(dashboard)).catch(() => undefined);
   }, [dashboard, isHydrated]);
+
+  useEffect(() => {
+    if (!user || !isHydrated || !dashboard.profile.onboardingComplete) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function syncNotifications() {
+      try {
+        await syncReminderNotificationsAsync(dashboard.reminders, {
+          requestPermissions: !notificationPermissionAttempted
+        });
+
+        if (!cancelled) {
+          setNotificationPermissionAttempted(true);
+        }
+      } catch {
+        if (!cancelled) {
+          setNotificationPermissionAttempted(true);
+        }
+      }
+    }
+
+    void syncNotifications();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [dashboard.profile.onboardingComplete, dashboard.reminders, isHydrated, notificationPermissionAttempted, user]);
 
   useEffect(() => {
     if (!user || !isHydrated || !isCloudHydrated || cloudSetupRequired) {
@@ -277,10 +383,10 @@ export function usePaceframeApp(): PaceframeAppController {
       lastGlobalCoachingRequestKey = requestKey;
       lastGlobalCoachingRequestAt = Date.now();
       setAIStatus('loading');
-      setAIMessage('Paceframe AI is refreshing your live coach guidance...');
+      setAIMessage('Paceframe AI is refreshing your coach guidance...');
 
       void fetchLiveCoaching(dashboard, user.email)
-        .then((bundle) => {
+        .then(async (bundle) => {
           if (cancelled) {
             return;
           }
@@ -288,7 +394,35 @@ export function usePaceframeApp(): PaceframeAppController {
           lastGlobalQuotaBackoffUntil = 0;
           setLiveCoaching(bundle);
           setAIStatus('ready');
-          setAIMessage(`Live coaching updated with ${bundle.model}.`);
+          setAIMessage('Live AI coaching is active and using your latest Paceframe data.');
+
+          try {
+            const authToken = await user.getIdToken();
+            await persistReviewArtifacts({
+              authToken,
+              daily: {
+                headline: bundle.dailyBrief.headline,
+                summary: [bundle.dailyBrief.focusBlock, bundle.dailyBrief.recoveryAnchor].filter(Boolean).join(' '),
+                payload: {
+                  reasoningSummary: bundle.reasoningSummary,
+                  aiCoach: bundle.aiCoach,
+                  dailyBrief: bundle.dailyBrief
+                },
+                model: bundle.model
+              },
+              weekly: {
+                headline: bundle.weeklyInsight.title,
+                summary: bundle.weeklyInsight.summary,
+                payload: {
+                  experiment: bundle.weeklyInsight.experiment,
+                  reasoningSummary: bundle.reasoningSummary
+                },
+                model: bundle.model
+              }
+            });
+          } catch {
+            // Keep live coaching usable even if review persistence fails.
+          }
         })
         .catch((error) => {
           if (cancelled) {
@@ -300,7 +434,7 @@ export function usePaceframeApp(): PaceframeAppController {
           }
 
           setAIStatus('error');
-          setAIMessage(error instanceof Error ? error.message : 'Live AI coaching could not be refreshed.');
+          setAIMessage(formatAIUserMessage(error, 'coach'));
         });
     }, 1200);
 
@@ -310,11 +444,30 @@ export function usePaceframeApp(): PaceframeAppController {
     };
   }, [aiAttempt, aiRefreshFingerprint, isCloudHydrated, isHydrated, user]);
 
-  const plan = useMemo(() => buildTodayPlan(dashboard), [dashboard]);
+  const planningDashboard = useMemo<DashboardState>(() => {
+    const hasPendingTasks = dashboard.tasks.some((task) => task.status === 'pending');
+    const sessionEnergyLane =
+      activeTab === 'plan'
+        ? planEnergyGateOpen
+          ? null
+          : (planSessionEnergyLane ?? dashboard.energyState.energy)
+        : dashboard.energyState.energy;
+
+    return {
+      ...dashboard,
+      taskFlow: {
+        ...dashboard.taskFlow,
+        selectedEnergyLane: hasPendingTasks ? sessionEnergyLane : null,
+        needsEnergyConfirmation: activeTab === 'plan' ? hasPendingTasks && planEnergyGateOpen : false
+      }
+    };
+  }, [activeTab, dashboard, planEnergyGateOpen, planSessionEnergyLane]);
+
+  const plan = useMemo(() => buildTodayPlan(planningDashboard), [planningDashboard]);
   const burnoutSignal = useMemo(() => getBurnoutSignal(dashboard.energyState), [dashboard.energyState]);
-  const fallbackCoach = useMemo(() => buildAICoachCard(dashboard), [dashboard]);
-  const fallbackDailyBrief = useMemo(() => buildDailyBrief(dashboard), [dashboard]);
-  const fallbackWeeklyInsight = useMemo(() => buildWeeklyInsight(dashboard), [dashboard]);
+  const fallbackCoach = useMemo(() => buildAICoachCard(planningDashboard), [planningDashboard]);
+  const fallbackDailyBrief = useMemo(() => buildDailyBrief(planningDashboard), [planningDashboard]);
+  const fallbackWeeklyInsight = useMemo(() => buildWeeklyInsight(planningDashboard), [planningDashboard]);
   const aiCoach = useMemo(() => liveCoaching?.aiCoach ?? fallbackCoach, [fallbackCoach, liveCoaching]);
   const dailyBrief = useMemo(() => liveCoaching?.dailyBrief ?? fallbackDailyBrief, [fallbackDailyBrief, liveCoaching]);
   const weeklyInsight = useMemo(() => liveCoaching?.weeklyInsight ?? fallbackWeeklyInsight, [fallbackWeeklyInsight, liveCoaching]);
@@ -365,7 +518,7 @@ export function usePaceframeApp(): PaceframeAppController {
   }
 
   function handleAddTask() {
-    if (!newTaskTitle.trim()) {
+    if (!newTaskTitle.trim() || planEnergyGateOpen) {
       return;
     }
 
@@ -389,30 +542,25 @@ export function usePaceframeApp(): PaceframeAppController {
   }
 
   function markTaskDone(taskId: string) {
-    setDashboard((current) => {
-      const nextTasks = completeTask(current.tasks, taskId);
-      const remainingTasks = nextTasks.filter((task) => task.status === 'pending');
+    const nextTasks = completeTask(dashboard.tasks, taskId);
+    const hasRemainingTasks = nextTasks.some((task) => task.status === 'pending');
 
-      if (remainingTasks.length === 0) {
-        return {
-          ...current,
-          tasks: nextTasks,
-          taskFlow: {
-            selectedEnergyLane: null,
-            needsEnergyConfirmation: false
-          }
-        };
+    setPlanSessionEnergyLane(null);
+    setPlanEnergyGateOpen(activeTab === 'plan' && hasRemainingTasks);
+
+    setDashboard((current) => ({
+      ...current,
+      tasks: current.tasks.map((task) =>
+        task.id === taskId
+          ? { ...task, status: 'completed' }
+          : task
+      ),
+      taskFlow: {
+        selectedEnergyLane: null,
+        needsEnergyConfirmation: hasRemainingTasks,
+        workOrderingPreference: current.taskFlow.workOrderingPreference
       }
-
-      return {
-        ...current,
-        tasks: nextTasks,
-        taskFlow: {
-          selectedEnergyLane: null,
-          needsEnergyConfirmation: true
-        }
-      };
-    });
+    }));
   }
 
   function reopenCompletedTask(taskId: string) {
@@ -496,6 +644,8 @@ export function usePaceframeApp(): PaceframeAppController {
   }
 
   function completeOnboarding() {
+    setPlanEnergyGateOpen(false);
+    setPlanSessionEnergyLane(null);
     setDashboard((current) => ({
       ...current,
       profile: updateUserProfile(current.profile, {
@@ -519,14 +669,27 @@ export function usePaceframeApp(): PaceframeAppController {
   }
 
   function selectEnergyLane(level: EnergyLevel) {
+    setPlanSessionEnergyLane(level);
+    setPlanEnergyGateOpen(false);
     setDashboard((current) => ({
       ...current,
       energyState: updateEnergyState(current.energyState, {
         energy: level
       }),
       taskFlow: {
-        selectedEnergyLane: level,
-        needsEnergyConfirmation: false
+        selectedEnergyLane: null,
+        needsEnergyConfirmation: false,
+        workOrderingPreference: current.taskFlow.workOrderingPreference
+      }
+    }));
+  }
+
+  function setWorkOrderingPreference(preference: WorkOrderingPreference) {
+    setDashboard((current) => ({
+      ...current,
+      taskFlow: {
+        ...current.taskFlow,
+        workOrderingPreference: preference
       }
     }));
   }
@@ -535,23 +698,14 @@ export function usePaceframeApp(): PaceframeAppController {
     setActiveTab(tab);
 
     if (tab !== 'plan') {
+      setPlanEnergyGateOpen(false);
+      setPlanSessionEnergyLane(null);
       return;
     }
 
-    setDashboard((current) => {
-      const pendingTasks = current.tasks.filter((task) => task.status === 'pending');
-      if (pendingTasks.length === 0) {
-        return current;
-      }
-
-      return {
-        ...current,
-        taskFlow: {
-          selectedEnergyLane: null,
-          needsEnergyConfirmation: true
-        }
-      };
-    });
+    const hasPendingTasks = dashboard.tasks.some((task) => task.status === 'pending');
+    setPlanSessionEnergyLane(null);
+    setPlanEnergyGateOpen(hasPendingTasks);
   }
 
   async function submitAssistantQuestion(promptOverride?: string) {
@@ -587,29 +741,55 @@ export function usePaceframeApp(): PaceframeAppController {
       setAssistantPrompt('');
 
       const reply = await fetchLiveAssistantReply(dashboard, question, user.email, outboundHistory);
+      const assistantMeta = [
+        reply.planSteps.length > 0 ? reply.planSteps.map((step, index) => `${index + 1}. ${step}`).join('\n') : '',
+        `Next: ${reply.suggestedAction}`,
+        reply.supportiveNote ? `Support: ${reply.supportiveNote}` : '',
+        reply.followUpQuestion ? `Follow-up: ${reply.followUpQuestion}` : ''
+      ]
+        .filter(Boolean)
+        .join('\n\n');
+
+      const assistantEntry = {
+        id: `${Date.now()}-assistant`,
+        role: 'assistant' as const,
+        text: `${reply.headline}\n\n${reply.answer}`,
+        meta: assistantMeta
+      };
 
       setAssistantReply(reply);
-      setAssistantHistory((current) => [
-        ...current,
-        {
-          id: `${Date.now()}-assistant`,
-          role: 'assistant',
-          text: `${reply.headline}\n\n${reply.answer}`,
-          meta: [
-            reply.planSteps.length > 0 ? reply.planSteps.map((step, index) => `${index + 1}. ${step}`).join('\n') : '',
-            `Next: ${reply.suggestedAction}`,
-            reply.supportiveNote ? `Support: ${reply.supportiveNote}` : '',
-            reply.followUpQuestion ? `Follow-up: ${reply.followUpQuestion}` : ''
-          ]
-            .filter(Boolean)
-            .join('\n\n')
-        }
-      ]);
+      setAssistantHistory((current) => [...current, assistantEntry]);
       setAssistantStatus('ready');
-      setAssistantMessage(`Answered live with ${reply.model}.`);
+      setAssistantMessage('Answered from your current Paceframe data.');
+
+      try {
+        const authToken = await user.getIdToken();
+        const nextConversationId = await persistAssistantConversation({
+          authToken,
+          conversationId: assistantConversationId,
+          title: question,
+          messages: [
+            {
+              role: 'user',
+              text: question
+            },
+            {
+              role: 'assistant',
+              text: assistantEntry.text,
+              meta: assistantEntry.meta
+            }
+          ]
+        });
+
+        if (nextConversationId) {
+          setAssistantConversationId(nextConversationId);
+        }
+      } catch {
+        // Keep the local chat responsive even if history persistence fails.
+      }
     } catch (error) {
       setAssistantStatus('error');
-      setAssistantMessage(error instanceof Error ? error.message : 'Paceframe AI could not answer right now.');
+      setAssistantMessage(formatAIUserMessage(error, 'assistant'));
     }
   }
 
@@ -692,6 +872,7 @@ export function usePaceframeApp(): PaceframeAppController {
       return;
     }
 
+    await cancelAllReminderNotificationsAsync().catch(() => undefined);
     await signOut(auth);
     setAuthStatus('idle');
     setAuthMessage('Signed out. Sign back in whenever you are ready.');
@@ -701,6 +882,8 @@ export function usePaceframeApp(): PaceframeAppController {
     dashboard,
     activeTab,
     setActiveTab: handleTabChange,
+    planEnergyGateOpen,
+    currentPlanEnergyLane: planSessionEnergyLane,
     newTaskTitle,
     setNewTaskTitle,
     newTaskEnergy,
@@ -755,6 +938,7 @@ export function usePaceframeApp(): PaceframeAppController {
     retryCloudSync,
     retryLiveCoaching,
     selectEnergyLane,
+    setWorkOrderingPreference,
     submitAssistantQuestion
   };
 }

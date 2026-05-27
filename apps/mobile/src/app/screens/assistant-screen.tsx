@@ -50,6 +50,7 @@ export function AssistantScreen({
   ];
 
   const aiAvailable = aiStatus === 'ready';
+  const assistantBusy = assistantStatus === 'loading';
   const statusTitle =
     aiStatus === 'ready'
       ? 'Live AI is active'
@@ -58,6 +59,18 @@ export function AssistantScreen({
         : aiStatus === 'error'
       ? 'Live AI needs attention'
       : 'Live AI has not connected yet';
+  const statusBody =
+    assistantStatus === 'loading'
+      ? 'Paceframe is reading your latest signals and shaping a grounded response before it answers.'
+      : aiAvailable
+        ? 'Ask about today, sequencing, overload, or recovery. Replies are shaped around your current strain, care gaps, and task load.'
+        : assistantMessage;
+  const topTask = plan.prioritizedTasks[0];
+  const contextPills = [
+    `${burnoutSignal.score}/100 strain`,
+    topTask ? `Top task: ${topTask.title}` : 'No pending task yet',
+    biggestCareGap.remaining > 0 ? `${biggestCareGap.label} gap: ${biggestCareGap.remaining}` : 'Care baseline covered'
+  ];
 
   return (
     <KeyboardAvoidingView
@@ -70,24 +83,56 @@ export function AssistantScreen({
           <Text style={styles.assistantTopBarEyebrow}>PACEFRAME AI</Text>
           <Text style={styles.assistantTopBarTitle}>Coach</Text>
           <Text numberOfLines={2} style={styles.assistantTopBarSubtitle}>
-            {aiMessage}
+            Talk through your day, your workload, and your recovery. Paceframe answers from your current app state, not general web knowledge.
           </Text>
         </View>
         <View style={styles.assistantTopBarActions}>
-          <View style={[styles.aiStatusPill, aiAvailable ? styles.aiStatusPillReady : styles.aiStatusPillError]}>
-            <Text style={styles.aiStatusPillLabel}>{aiAvailable ? 'Live' : 'Check'}</Text>
+          <View
+            style={[
+              styles.aiStatusPill,
+              aiAvailable ? styles.aiStatusPillReady : styles.aiStatusPillError,
+              assistantBusy ? styles.aiStatusPillBusy : null
+            ]}
+          >
+            <Text style={styles.aiStatusPillLabel}>{assistantBusy ? 'Thinking' : aiAvailable ? 'Live' : 'Check'}</Text>
           </View>
           <Pressable onPress={retryLiveCoaching} style={styles.assistantRetryButton}>
             <Text style={styles.assistantRetryButtonLabel}>Retry</Text>
           </Pressable>
         </View>
       </View>
-      <Text style={styles.assistantContextLine}>
-        {statusTitle} • {burnoutSignal.score}/100 strain
-        {plan.prioritizedTasks[0] ? ` • Top task: ${plan.prioritizedTasks[0].title}` : ''}
-      </Text>
 
       <View style={styles.assistantConversationShell}>
+        <View style={styles.assistantStatusCard}>
+          <View style={styles.assistantStatusHeader}>
+            <View style={styles.assistantStatusCopy}>
+              <Text style={styles.assistantStatusEyebrow}>Live coach status</Text>
+              <Text style={styles.assistantStatusTitle}>{statusTitle}</Text>
+            </View>
+            <View
+              style={[
+                styles.aiStatusPill,
+                aiAvailable ? styles.aiStatusPillReady : styles.aiStatusPillError,
+                assistantBusy ? styles.aiStatusPillBusy : null
+              ]}
+            >
+              <Text style={styles.aiStatusPillLabel}>{assistantBusy ? 'Thinking' : aiAvailable ? 'Connected' : 'Unavailable'}</Text>
+            </View>
+          </View>
+          <Text style={styles.assistantStatusBody}>{statusBody}</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.assistantContextPillRow}
+          >
+            {contextPills.map((pill) => (
+              <View key={pill} style={styles.assistantContextPill}>
+                <Text style={styles.assistantContextPillLabel}>{pill}</Text>
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+
         <ScrollView
           style={styles.assistantThreadScroll}
           contentContainerStyle={[
@@ -102,27 +147,34 @@ export function AssistantScreen({
               {assistantHistory.slice(-12).map((item) => (
                 <View
                   key={item.id}
-                  style={[styles.threadBubble, item.role === 'user' ? styles.threadBubbleUser : styles.threadBubbleAssistant]}
+                  style={[styles.threadRow, item.role === 'user' ? styles.threadRowUser : styles.threadRowAssistant]}
                 >
-                  <Text style={styles.threadRole}>{item.role === 'user' ? 'You' : 'Paceframe AI'}</Text>
-                  <Text style={[styles.threadText, item.role === 'user' ? styles.threadTextUser : styles.threadTextAssistant]}>{item.text}</Text>
-                  {item.meta ? <Text style={styles.threadMeta}>{item.meta}</Text> : null}
+                  <View
+                    style={[styles.threadBubble, item.role === 'user' ? styles.threadBubbleUser : styles.threadBubbleAssistant]}
+                  >
+                    <Text style={styles.threadRole}>{item.role === 'user' ? 'You' : 'Paceframe AI'}</Text>
+                    <Text style={[styles.threadText, item.role === 'user' ? styles.threadTextUser : styles.threadTextAssistant]}>
+                      {item.text}
+                    </Text>
+                    {item.meta ? <Text style={styles.threadMeta}>{item.meta}</Text> : null}
+                  </View>
                 </View>
               ))}
-              {assistantStatus === 'loading' ? <AIThinkingCard /> : null}
+              {assistantBusy ? <AIThinkingCard /> : null}
             </View>
           ) : (
             <View style={styles.emptyAIState}>
+              <Text style={styles.emptyAIStateEyebrow}>Paceframe can help with</Text>
               <Text style={styles.emptyAIStateTitle}>Start the conversation</Text>
               <Text style={styles.emptyAIStateBody}>
-                Ask Paceframe to plan your day, help you recover, or tell you what to protect. It will read your current signals and respond like a live chat.
+                Ask Paceframe to shape the day around your real capacity, tell you what to protect, or help you recover without losing momentum.
               </Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.quickAskStrip}
-                keyboardShouldPersistTaps="handled"
-              >
+              <View style={styles.emptyAIStateChecklist}>
+                <Text style={styles.emptyAIStatePoint}>Plan the next few hours around your current energy</Text>
+                <Text style={styles.emptyAIStatePoint}>Decide whether to push, pause, or recover</Text>
+                <Text style={styles.emptyAIStatePoint}>Turn overload into a calmer sequence of steps</Text>
+              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickAskStrip} keyboardShouldPersistTaps="handled">
                 {quickAsks.map((prompt) => (
                   <Pressable
                     key={prompt}
@@ -140,7 +192,7 @@ export function AssistantScreen({
         </ScrollView>
 
         <View style={styles.chatComposerDock}>
-          {assistantStatus !== 'ready' ? <Text style={styles.helperBody}>{assistantMessage}</Text> : null}
+          {assistantStatus !== 'ready' && !assistantBusy ? <Text style={styles.helperBody}>{assistantMessage}</Text> : null}
           <View style={styles.chatComposerShell}>
             <TextInput
               value={assistantPrompt}

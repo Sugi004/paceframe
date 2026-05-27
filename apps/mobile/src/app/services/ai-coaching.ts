@@ -108,10 +108,45 @@ class AIHttpError extends Error {
   }
 }
 
+const AI_MEMORY_BACKOFF_MS = 5 * 60_000;
+let aiMemoryBackoffUntil = 0;
+
+function shouldSkipAIMemoryRequests() {
+  return Date.now() < aiMemoryBackoffUntil;
+}
+
+function isOptionalAIMemoryFailure(message: string) {
+  const normalized = message.toLowerCase();
+
+  return (
+    normalized.includes('ai memory tables are not ready') ||
+    normalized.includes('schema cache') ||
+    normalized.includes('public.ai_') ||
+    normalized.includes('row-level security') ||
+    normalized.includes('could not verify access') ||
+    normalized.includes('authorization bearer token is required')
+  );
+}
+
+function markAIMemoryBackoff() {
+  aiMemoryBackoffUntil = Date.now() + AI_MEMORY_BACKOFF_MS;
+}
+
 type AssistantHistoryEntry = {
   role: 'user' | 'assistant';
   text: string;
   meta?: string;
+};
+
+export type PersistedAssistantThread = {
+  conversationId: string;
+  title: string | null;
+  messages: Array<{
+    id: string;
+    role: 'user' | 'assistant';
+    text: string;
+    meta?: string;
+  }>;
 };
 
 export async function fetchLiveCoaching(dashboard: DashboardState, userEmail?: string | null) {
@@ -200,5 +235,202 @@ export async function fetchLiveAssistantReply(
     throw lastError ?? new Error('Paceframe AI could not answer right now.');
   } catch (error) {
     throw toAIAvailabilityError(error, baseUrls, 'Paceframe AI could not answer right now.');
+  }
+}
+
+async function authedFetch(path: string, authToken: string, init?: RequestInit) {
+  const [baseUrl] = getAICoachingBaseUrls();
+  const response = await fetch(`${baseUrl}${path}`, {
+    ...init,
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${authToken}`,
+      ...(init?.headers ?? {})
+    }
+  });
+
+  const payload = await response.json().catch(() => null);
+  if (!response.ok) {
+    const message =
+      payload && typeof payload === 'object' && 'error' in payload && typeof payload.error === 'string'
+        ? payload.error
+        : 'AI persistence request failed.';
+    throw new Error(message);
+  }
+
+  return payload as { data?: unknown };
+}
+
+export async function fetchLatestAssistantThread(authToken: string): Promise<PersistedAssistantThread | null> {
+  if (shouldSkipAIMemoryRequests()) {
+    return null;
+  }
+
+  let summaryPayload: Awaited<ReturnType<typeof authedFetch>>;
+  try {
+    summaryPayload = await authedFetch('/api/ai/history?limit=1', authToken);
+  } catch (error) {
+    if (error instanceof Error && isOptionalAIMemoryFailure(error.message)) {
+      markAIMemoryBackoff();
+      return null;
+    }
+
+    throw error;
+  }
+  const summaryData =
+    summaryPayload.data && typeof summaryPayload.data === 'object' && 'conversations' in summaryPayload.data
+      ? (summaryPayload.data as { conversations?: Array<{ id: string }> }).conversations
+      : [];
+  const latestConversation = summaryData?.[0];
+
+  if (!latestConversation?.id) {
+    return null;
+  }
+
+  let threadPayload: Awaited<ReturnType<typeof authedFetch>>;
+  try {
+    threadPayload = await authedFetch(`/api/ai/history?conversationId=${latestConversation.id}`, authToken);
+  } catch (error) {
+    if (error instanceof Error && isOptionalAIMemoryFailure(error.message)) {
+      markAIMemoryBackoff();
+      return null;
+    }
+
+    throw error;
+  }
+  const threadData = threadPayload.data as
+    | {
+        conversation?: {
+          id: string;
+          title: string | null;
+        };
+        messages?: Array<{
+          id: string;
+          role: 'system' | 'user' | 'assistant';
+          content: string;
+          metadata?: Record<string, unknown>;
+        }>;
+      }
+    | undefined;
+
+  if (!threadData?.conversation?.id) {
+    return null;
+  }
+
+  return {
+    conversationId: threadData.conversation.id,
+    title: threadData.conversation.title ?? null,
+    messages:
+      threadData.messages
+        ?.filter((message) => message.role === 'user' || message.role === 'assistant')
+        .map((message) => ({
+          id: message.id,
+          role: message.role as 'user' | 'assistant',
+          text: message.content,
+          meta: typeof message.metadata?.meta === 'string' ? message.metadata.meta : undefined
+        })) ?? []
+  };
+}
+
+export async function persistAssistantConversation(params: {
+  authToken: string;
+  conversationId?: string | null;
+  title?: string;
+  messages: Array<{
+    role: 'user' | 'assistant';
+    text: string;
+    meta?: string;
+  }>;
+}) {
+  if (shouldSkipAIMemoryRequests()) {
+    return params.conversationId ?? null;
+  }
+
+  let payload: Awaited<ReturnType<typeof authedFetch>>;
+  try {
+    payload = await authedFetch('/api/ai/history', params.authToken, {
+      method: 'POST',
+      body: JSON.stringify({
+        conversationId: params.conversationId ?? undefined,
+        title: params.title,
+        source: 'assist',
+        messages: params.messages.map((message) => ({
+          role: message.role,
+          content: message.text,
+          metadata: message.meta ? { meta: message.meta } : undefined
+        }))
+      })
+    });
+  } catch (error) {
+    if (error instanceof Error && isOptionalAIMemoryFailure(error.message)) {
+      markAIMemoryBackoff();
+      return params.conversationId ?? null;
+    }
+
+    throw error;
+  }
+
+  const data = payload.data as
+    | {
+        conversation?: {
+          id: string;
+        };
+      }
+    | undefined;
+
+  return data?.conversation?.id ?? null;
+}
+
+export async function persistReviewArtifacts(params: {
+  authToken: string;
+  daily: {
+    headline: string;
+    summary: string;
+    payload?: Record<string, unknown>;
+    model?: string;
+  };
+  weekly: {
+    headline: string;
+    summary: string;
+    payload?: Record<string, unknown>;
+    model?: string;
+  };
+}) {
+  if (shouldSkipAIMemoryRequests()) {
+    return;
+  }
+
+  try {
+    await Promise.all([
+      authedFetch('/api/ai/review', params.authToken, {
+        method: 'POST',
+        body: JSON.stringify({
+          kind: 'daily',
+          headline: params.daily.headline,
+          summary: params.daily.summary,
+          payload: params.daily.payload,
+          model: params.daily.model,
+          source: 'coach'
+        })
+      }),
+      authedFetch('/api/ai/review', params.authToken, {
+        method: 'POST',
+        body: JSON.stringify({
+          kind: 'weekly',
+          headline: params.weekly.headline,
+          summary: params.weekly.summary,
+          payload: params.weekly.payload,
+          model: params.weekly.model,
+          source: 'coach'
+        })
+      })
+    ]);
+  } catch (error) {
+    if (error instanceof Error && isOptionalAIMemoryFailure(error.message)) {
+      markAIMemoryBackoff();
+      return;
+    }
+
+    throw error;
   }
 }

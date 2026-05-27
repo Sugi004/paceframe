@@ -4,6 +4,7 @@ export type TaskStatus = 'pending' | 'completed';
 export type ReminderKind = 'eat' | 'move' | 'rest' | 'hydrate';
 export type PlanningStyle = 'steady' | 'protective' | 'ambitious';
 export type CrashWindow = 'morning' | 'afternoon' | 'evening';
+export type WorkOrderingPreference = 'paceframe' | EnergyLevel;
 
 export interface EnergyState {
   focusLabel: string;
@@ -80,6 +81,7 @@ export interface ReflectionState {
 export interface TaskFlowState {
   selectedEnergyLane: EnergyLevel | null;
   needsEnergyConfirmation: boolean;
+  workOrderingPreference: WorkOrderingPreference;
 }
 
 export interface UserProfile {

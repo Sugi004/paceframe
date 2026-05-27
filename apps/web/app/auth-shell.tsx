@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -38,13 +39,20 @@ const modeCopy: Record<AuthMode, { title: string; subtitle: string; button: stri
   }
 };
 
+const legalLinks = [
+  { href: '/privacy', label: 'Privacy' },
+  { href: '/terms', label: 'Terms' }
+] as const;
+
 function formatAuthErrorMessage(error: unknown, mode: AuthMode) {
   if (!(error instanceof Error)) {
-    return 'We could not complete that request.';
+    return 'We could not complete that request right now.';
   }
 
   if (!('code' in error) || typeof error.code !== 'string') {
-    return error.message;
+    return mode === 'reset'
+      ? 'We could not send the reset email right now. Try again in a moment.'
+      : 'We could not complete sign-in right now. Try again in a moment.';
   }
 
   switch (error.code) {
@@ -62,7 +70,9 @@ function formatAuthErrorMessage(error: unknown, mode: AuthMode) {
     case 'auth/invalid-credential':
       return 'We could not find an account matching that email and password.';
     default:
-      return error.message;
+      return mode === 'reset'
+        ? 'We could not send the reset email right now. Try again in a moment.'
+        : 'We could not complete sign-in right now. Try again in a moment.';
   }
 }
 
@@ -124,7 +134,7 @@ export function AuthShell({ initialMode = 'signup' }: { initialMode?: AuthMode }
         router.replace('/onboarding');
       } catch (error) {
         setStatus('error');
-        setMessage(error instanceof Error ? error.message : 'We could not verify your email link.');
+        setMessage('We could not verify your email link right now. Start again from this page.');
       }
     }
 
@@ -282,13 +292,13 @@ export function AuthShell({ initialMode = 'signup' }: { initialMode?: AuthMode }
             <>
               <div className="auth-mode-switch">
                 {(['signup', 'signin', 'reset'] as AuthMode[]).map((nextMode) => (
-                  <a
+                  <Link
                     key={nextMode}
                     className={nextMode === mode ? 'mode-chip active' : 'mode-chip'}
                     href={nextMode === 'signup' ? '/' : `/?mode=${nextMode}`}
                   >
                     {nextMode === 'signup' ? 'Create account' : nextMode === 'signin' ? 'Sign in' : 'Reset'}
-                  </a>
+                  </Link>
                 ))}
               </div>
 
@@ -333,6 +343,11 @@ export function AuthShell({ initialMode = 'signup' }: { initialMode?: AuthMode }
                     Send magic link instead
                   </button>
                 ) : null}
+                <p style={{ margin: 0, fontSize: '0.9rem', opacity: 0.82 }}>
+                  By continuing, you agree to Paceframe&apos;s{' '}
+                  <Link href="/terms">Terms</Link> and acknowledge the{' '}
+                  <Link href="/privacy">Privacy Policy</Link>.
+                </p>
               </div>
             </>
           )}
@@ -378,6 +393,28 @@ export function AuthShell({ initialMode = 'signup' }: { initialMode?: AuthMode }
           </ul>
         </div>
       </section>
+
+      <footer
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          justifyContent: 'space-between',
+          gap: '1rem',
+          padding: '0 0 2.5rem',
+          color: 'rgba(221, 231, 255, 0.78)'
+        }}
+      >
+        <p style={{ margin: 0, maxWidth: '40rem' }}>
+          Paceframe web is for access, verification, and lightweight account support. Daily planning, recovery, and AI coaching are designed for the mobile product.
+        </p>
+        <nav aria-label="Legal" style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          {legalLinks.map((link) => (
+            <Link key={link.href} href={link.href}>
+              {link.label}
+            </Link>
+          ))}
+        </nav>
+      </footer>
     </main>
   );
 }

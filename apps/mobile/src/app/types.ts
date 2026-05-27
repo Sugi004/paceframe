@@ -8,6 +8,7 @@ import type {
   DashboardState,
   DailyBrief,
   EnergyLevel,
+  WorkOrderingPreference,
   PlanningStyle,
   ReminderItem,
   TodayPlan,
@@ -32,6 +33,8 @@ export interface PaceframeAppController {
   dashboard: DashboardState;
   activeTab: Tab;
   setActiveTab: (tab: Tab) => void;
+  planEnergyGateOpen: boolean;
+  currentPlanEnergyLane: EnergyLevel | null;
   newTaskTitle: string;
   setNewTaskTitle: (value: string) => void;
   newTaskEnergy: EnergyLevel;
@@ -86,5 +89,6 @@ export interface PaceframeAppController {
   retryCloudSync: () => void;
   retryLiveCoaching: () => void;
   selectEnergyLane: (level: EnergyLevel) => void;
+  setWorkOrderingPreference: (preference: WorkOrderingPreference) => void;
   submitAssistantQuestion: (promptOverride?: string) => Promise<void>;
 }

@@ -165,12 +165,60 @@ export const styles = StyleSheet.create({
     fontWeight: '900',
     fontSize: 12
   },
-  assistantContextLine: {
-    color: '#94a7ca',
-    fontSize: 12,
-    lineHeight: 18,
+  dropdownWrap: {
+    marginBottom: 14
+  },
+  dropdownLabel: {
+    color: '#61728e',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    marginBottom: 8
+  },
+  dropdownButton: {
+    borderRadius: 16,
+    backgroundColor: '#edf4ff',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between'
+  },
+  dropdownButtonText: {
+    color: '#173056',
+    fontWeight: '800'
+  },
+  dropdownChevron: {
+    color: '#5d6a86',
+    fontSize: 11,
+    fontWeight: '900'
+  },
+  dropdownMenu: {
     marginTop: 8,
-    marginBottom: 10
+    borderRadius: 16,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: 'rgba(15,23,48,0.08)',
+    overflow: 'hidden'
+  },
+  dropdownMenuItem: {
+    paddingHorizontal: 14,
+    paddingVertical: 12
+  },
+  dropdownMenuItemActive: {
+    backgroundColor: '#fff2dc'
+  },
+  dropdownMenuText: {
+    color: '#40506d',
+    fontWeight: '700'
+  },
+  dropdownMenuTextActive: {
+    color: '#0f1730',
+    fontWeight: '900'
+  },
+  planLockedShell: {
+    opacity: 0.78
   },
   assistantConversationShell: {
     flex: 1,
@@ -185,6 +233,61 @@ export const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 14 },
     elevation: 8,
     overflow: 'hidden'
+  },
+  assistantStatusCard: {
+    paddingHorizontal: 14,
+    paddingTop: 14,
+    paddingBottom: 12,
+    backgroundColor: '#f2f7ff',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(15,23,48,0.06)'
+  },
+  assistantStatusHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 10,
+    marginBottom: 8
+  },
+  assistantStatusCopy: {
+    flex: 1
+  },
+  assistantStatusEyebrow: {
+    color: '#6b7a96',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    marginBottom: 4
+  },
+  assistantStatusTitle: {
+    color: '#102347',
+    fontSize: 18,
+    lineHeight: 22,
+    fontWeight: '900'
+  },
+  assistantStatusBody: {
+    color: '#5c6b86',
+    fontSize: 13,
+    lineHeight: 19,
+    marginBottom: 10
+  },
+  assistantContextPillRow: {
+    paddingRight: 8
+  },
+  assistantContextPill: {
+    borderRadius: 999,
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(15,23,48,0.06)'
+  },
+  assistantContextPillLabel: {
+    color: '#31496f',
+    fontSize: 11,
+    fontWeight: '700'
   },
   authContent: {
     paddingHorizontal: 18,
@@ -396,6 +499,18 @@ export const styles = StyleSheet.create({
     fontWeight: '900'
   },
   disabledButton: {
+    opacity: 0.45
+  },
+  inputDisabled: {
+    opacity: 0.55
+  },
+  segmentDisabled: {
+    opacity: 0.45
+  },
+  segmentLabelDisabled: {
+    color: '#7f8aa3'
+  },
+  primaryButtonDisabled: {
     opacity: 0.45
   },
   pageIntro: {
@@ -811,6 +926,9 @@ export const styles = StyleSheet.create({
   aiStatusPillError: {
     backgroundColor: '#ffd0d0'
   },
+  aiStatusPillBusy: {
+    backgroundColor: '#ffe7b5'
+  },
   aiStatusPillLabel: {
     color: '#0f1730',
     fontWeight: '800'
@@ -882,19 +1000,19 @@ export const styles = StyleSheet.create({
     justifyContent: 'space-between'
   },
   quickAskStrip: {
-    paddingTop: 8,
+    paddingTop: 10,
     paddingBottom: 2,
     paddingRight: 6,
-    marginTop: 8
+    marginTop: 2
   },
   quickAskChip: {
     borderRadius: 999,
-    backgroundColor: '#fff2dc',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 13,
+    paddingVertical: 9,
     marginRight: 10,
     borderWidth: 1,
-    borderColor: 'rgba(15,23,48,0.06)'
+    borderColor: 'rgba(15,23,48,0.07)'
   },
   quickAskChipLabel: {
     color: '#173056',
@@ -1362,35 +1480,45 @@ export const styles = StyleSheet.create({
   },
   assistantThreadContent: {
     flexGrow: 1,
-    paddingHorizontal: 12,
-    paddingTop: 12,
-    paddingBottom: 10
+    paddingHorizontal: 14,
+    paddingTop: 14,
+    paddingBottom: 12
   },
   assistantThreadContentEmpty: {
-    justifyContent: 'center'
+    justifyContent: 'flex-start'
   },
   assistantThreadContentActive: {
-    justifyContent: 'flex-end'
+    justifyContent: 'flex-start'
   },
   threadStack: {
     paddingBottom: 6
   },
+  threadRow: {
+    marginBottom: 10
+  },
+  threadRowUser: {
+    alignItems: 'flex-end'
+  },
+  threadRowAssistant: {
+    alignItems: 'flex-start'
+  },
   threadBubble: {
-    borderRadius: 20,
-    padding: 14,
-    marginBottom: 10,
+    borderRadius: 22,
+    paddingHorizontal: 14,
+    paddingTop: 11,
+    paddingBottom: 12,
     maxWidth: '84%'
   },
   threadBubbleUser: {
-    alignSelf: 'flex-end',
     backgroundColor: '#0f1730',
+    borderTopRightRadius: 10,
     borderBottomRightRadius: 8
   },
   threadBubbleAssistant: {
-    alignSelf: 'flex-start',
     backgroundColor: '#edf4ff',
     borderWidth: 1,
     borderColor: 'rgba(15,23,48,0.06)',
+    borderTopLeftRadius: 10,
     borderBottomLeftRadius: 8
   },
   threadRole: {
@@ -1402,7 +1530,7 @@ export const styles = StyleSheet.create({
     color: '#8b9bb8'
   },
   threadText: {
-    lineHeight: 22,
+    lineHeight: 21,
     fontWeight: '700'
   },
   threadTextUser: {
@@ -1414,20 +1542,29 @@ export const styles = StyleSheet.create({
   threadMeta: {
     marginTop: 8,
     color: '#5c6b86',
-    lineHeight: 20,
-    fontWeight: '700'
+    lineHeight: 19,
+    fontWeight: '700',
+    fontSize: 12
   },
   emptyAIState: {
-    borderRadius: 20,
+    borderRadius: 24,
     padding: 18,
     backgroundColor: '#eef5ff',
     borderWidth: 1,
     borderColor: 'rgba(15,23,48,0.06)',
     marginBottom: 10
   },
+  emptyAIStateEyebrow: {
+    color: '#61728e',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    marginBottom: 6
+  },
   emptyAIStateTitle: {
     color: '#102347',
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '800',
     marginBottom: 8
   },
@@ -1435,16 +1572,26 @@ export const styles = StyleSheet.create({
     color: '#5c6b86',
     lineHeight: 21
   },
+  emptyAIStateChecklist: {
+    marginTop: 12,
+    marginBottom: 2,
+    gap: 7
+  },
+  emptyAIStatePoint: {
+    color: '#31496f',
+    lineHeight: 20,
+    fontWeight: '700'
+  },
   chatComposerDock: {
     borderTopWidth: 1,
     borderTopColor: 'rgba(15,23,48,0.08)',
-    paddingTop: 8,
+    paddingTop: 10,
     paddingHorizontal: 12,
-    paddingBottom: 10,
+    paddingBottom: 12,
     backgroundColor: '#f7fbff'
   },
   chatComposerShell: {
-    borderRadius: 24,
+    borderRadius: 26,
     backgroundColor: '#eef5ff',
     padding: 8,
     borderWidth: 1,
@@ -1454,10 +1601,11 @@ export const styles = StyleSheet.create({
     borderRadius: 18,
     backgroundColor: 'transparent',
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingTop: 10,
+    paddingBottom: 10,
     color: '#0f1730',
-    minHeight: 50,
-    maxHeight: 96,
+    minHeight: 54,
+    maxHeight: 112,
     textAlignVertical: 'top',
     marginBottom: 6
   },

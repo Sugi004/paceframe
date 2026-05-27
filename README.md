@@ -29,6 +29,17 @@ Paceframe is a mobile-first personal regulation platform that helps people plan 
    - `npm run dev:web`
    - `npm run dev:mcp`
 
+### Web shell environment
+
+The web shell expects the following production-facing values:
+
+- `NEXT_PUBLIC_SITE_URL`: canonical public base URL for the web shell
+- `NEXT_PUBLIC_FIREBASE_*`: Firebase web client configuration
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` or `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+
+For local development, `NEXT_PUBLIC_SITE_URL` can remain unset and the app will fall back to `http://127.0.0.1:3000`.
+
 ## Current MVP
 
 - Energy-aware day planning
@@ -43,3 +54,17 @@ Paceframe is a mobile-first personal regulation platform that helps people plan 
 - Suggested recovery protocols
 - Web email-link sign-in and verification shell
 - MCP server tools for plans, summaries, reminders, completed tasks, and recovery context
+
+## Web shell production notes
+
+- The web app is intentionally narrow in scope: account access, verification, onboarding support, and legal review.
+- Production deployments should expose `/privacy` and `/terms` alongside the auth shell.
+- Firebase authorized domains and email action URLs should match the final public web shell domain.
+- Server-only secrets such as service-role keys and AI provider keys must never be exposed through `NEXT_PUBLIC_*` variables.
+- Before launch, complete the remaining production work: analytics, crash reporting, export/delete-account flows, and final legal review.
+
+## Release prep
+
+- App Store / Play Store copy: [docs/app-store-metadata.md](/Users/sugishivam/Desktop/Paceframe/docs/app-store-metadata.md)
+- Mobile release checklist: [docs/mobile-release-checklist.md](/Users/sugishivam/Desktop/Paceframe/docs/mobile-release-checklist.md)
+- Generated mobile assets live in `apps/mobile/assets`

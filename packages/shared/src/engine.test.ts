@@ -32,7 +32,8 @@ describe('planning engine', () => {
       },
       taskFlow: {
         selectedEnergyLane: null,
-        needsEnergyConfirmation: true
+        needsEnergyConfirmation: true,
+        workOrderingPreference: 'paceframe'
       }
     });
 
@@ -47,7 +48,8 @@ describe('planning engine', () => {
     const laneSelectedState = mergeDashboardState({
       taskFlow: {
         selectedEnergyLane: 'high',
-        needsEnergyConfirmation: false
+        needsEnergyConfirmation: false,
+        workOrderingPreference: 'paceframe'
       }
     });
 
@@ -63,7 +65,8 @@ describe('planning engine', () => {
     const fallbackState = mergeDashboardState({
       taskFlow: {
         selectedEnergyLane: 'low',
-        needsEnergyConfirmation: false
+        needsEnergyConfirmation: false,
+        workOrderingPreference: 'paceframe'
       },
       tasks: [
         {
@@ -108,7 +111,8 @@ describe('planning engine', () => {
       },
       taskFlow: {
         selectedEnergyLane: 'medium',
-        needsEnergyConfirmation: false
+        needsEnergyConfirmation: false,
+        workOrderingPreference: 'paceframe'
       },
       tasks: [
         {
@@ -138,6 +142,36 @@ describe('planning engine', () => {
       'Higher urgency medium task',
       'Lower urgency medium task'
     ]);
+  });
+
+  it('keeps high-energy tasks first when the user selects medium and Paceframe is deciding the order', () => {
+    const mediumSelectedState = mergeDashboardState({
+      taskFlow: {
+        selectedEnergyLane: 'medium',
+        needsEnergyConfirmation: false,
+        workOrderingPreference: 'paceframe'
+      }
+    });
+
+    const plan = buildTodayPlan(mediumSelectedState);
+
+    expect(plan.visiblePriorityTasks.map((task) => task.energyCost)).toEqual(['high', 'medium']);
+    expect(plan.activeEnergyLane).toBe('high');
+  });
+
+  it('allows an explicit user override to put medium-energy work first', () => {
+    const manualPreferenceState = mergeDashboardState({
+      taskFlow: {
+        selectedEnergyLane: 'medium',
+        needsEnergyConfirmation: false,
+        workOrderingPreference: 'medium'
+      }
+    });
+
+    const plan = buildTodayPlan(manualPreferenceState);
+
+    expect(plan.visiblePriorityTasks.map((task) => task.energyCost)).toEqual(['medium', 'high']);
+    expect(plan.activeEnergyLane).toBe('medium');
   });
 
   it('detects elevated burnout risk from stress, screen fatigue, and sleep loss', () => {
@@ -238,6 +272,7 @@ describe('planning engine', () => {
     expect(merged.carePlan.hydrationTarget).toBe(mockDashboard.carePlan.hydrationTarget);
     expect(merged.reflection.intention).toBe(mockDashboard.reflection.intention);
     expect(merged.taskFlow.needsEnergyConfirmation).toBe(true);
+    expect(merged.taskFlow.workOrderingPreference).toBe('paceframe');
     expect(merged.tasks[0]?.estimatedMinutes).toBe(90);
     expect(merged.tasks[1]?.estimatedMinutes).toBe(20);
     expect(merged.energyState.focusLabel).toBe('Old saved state');

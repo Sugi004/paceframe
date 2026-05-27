@@ -13,6 +13,7 @@ import type {
   RecoveryProtocol,
   TaskItem,
   TodayPlan,
+  WorkOrderingPreference,
   UserProfile,
   WeeklyInsight,
   WeeklySummary
@@ -31,7 +32,7 @@ function currentEnergyWeight(level: EnergyLevel) {
 
 const energyLaneFallbackOrder: Record<EnergyLevel, EnergyLevel[]> = {
   high: ['high', 'medium', 'low'],
-  medium: ['medium', 'low', 'high'],
+  medium: ['medium', 'high', 'low'],
   low: ['low', 'medium', 'high']
 };
 
@@ -39,6 +40,7 @@ export function buildTodayPlan(state: DashboardState): TodayPlan {
   const prioritizedTasks = rankPendingTasks(state);
   const recoveryBlocks = buildRecoveryBlocks(state.energyState, state.profile);
   const essentials = buildEssentials(state.energyState, state.checkIn);
+  const selectedEnergyLane = state.taskFlow.selectedEnergyLane;
 
   if (prioritizedTasks.length === 0) {
     return {
@@ -53,7 +55,7 @@ export function buildTodayPlan(state: DashboardState): TodayPlan {
     };
   }
 
-  const needsEnergyConfirmation = state.taskFlow.needsEnergyConfirmation || !state.taskFlow.selectedEnergyLane;
+  const needsEnergyConfirmation = state.taskFlow.needsEnergyConfirmation || selectedEnergyLane === null;
 
   if (needsEnergyConfirmation) {
     return {
@@ -68,8 +70,9 @@ export function buildTodayPlan(state: DashboardState): TodayPlan {
     };
   }
 
-  const requestedLane = state.taskFlow.selectedEnergyLane ?? state.energyState.energy;
-  const { visibleTasks, resolvedLane } = resolveTasksForEnergyLane(prioritizedTasks, requestedLane);
+  const laneOrder = resolveLaneOrder(selectedEnergyLane, state.taskFlow.workOrderingPreference);
+  const requestedLane = laneOrder[0];
+  const { visibleTasks, resolvedLane } = resolveTasksForEnergyLane(prioritizedTasks, laneOrder);
 
   return {
     prioritizedTasks,
@@ -114,15 +117,34 @@ function rankPendingTasks(state: DashboardState): PrioritizedTask[] {
     );
 }
 
-function resolveTasksForEnergyLane(tasks: PrioritizedTask[], requestedLane: EnergyLevel) {
-  const candidateLanes = energyLaneFallbackOrder[requestedLane];
-  const resolvedLane = candidateLanes.find((lane) => tasks.some((task) => task.energyCost === lane)) ?? requestedLane;
-  const orderedTasks = candidateLanes.flatMap((lane) => tasks.filter((task) => task.energyCost === lane));
+function resolveTasksForEnergyLane(tasks: PrioritizedTask[], candidateLanes: EnergyLevel[]) {
+  const orderedLanes = [...new Set(candidateLanes)];
+  const requestedLane = orderedLanes[0];
+  const groupedTasks = orderedLanes.map((lane) => ({
+    lane,
+    tasks: tasks.filter((task) => task.energyCost === lane)
+  }));
+  const resolvedLane = groupedTasks.find((group) => group.tasks.length > 0)?.lane ?? requestedLane;
+  const orderedTasks = groupedTasks.flatMap((group) => group.tasks);
 
   return {
     visibleTasks: orderedTasks,
     resolvedLane
   };
+}
+
+function resolveLaneOrder(selectedEnergyLane: EnergyLevel, workOrderingPreference: WorkOrderingPreference): EnergyLevel[] {
+  switch (workOrderingPreference) {
+    case 'high':
+      return energyLaneFallbackOrder.high;
+    case 'medium':
+      return energyLaneFallbackOrder.medium;
+    case 'low':
+      return energyLaneFallbackOrder.low;
+    case 'paceframe':
+    default:
+      return selectedEnergyLane === 'low' ? energyLaneFallbackOrder.low : energyLaneFallbackOrder.high;
+  }
 }
 
 function buildRecoveryBlocks(energyState: EnergyState, profile: UserProfile) {

@@ -54,7 +54,7 @@ export function normalizeGeminiError(error: unknown) {
 
   return {
     status: 500,
-    message
+    message: 'Gemini could not complete that request right now.'
   };
 }
 
@@ -86,7 +86,7 @@ export function normalizeGroqError(error: unknown) {
 
   return {
     status: 500,
-    message
+    message: 'Groq could not complete that request right now.'
   };
 }
 
@@ -108,7 +108,7 @@ export function normalizeAIError(error: unknown) {
       return { status: 500, message: error.message };
     }
 
-    return { status: 500, message: error.message };
+    return { status: 500, message: 'Live AI assistance is temporarily unavailable.' };
   }
 
   return {
