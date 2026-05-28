@@ -31,7 +31,7 @@ export default function App() {
     }
 
     const elapsed = Date.now() - launchStartedAtRef.current;
-    const remaining = Math.max(0, 1400 - elapsed);
+    const remaining = Math.max(0, 1900 - elapsed);
     const timeoutId = setTimeout(() => {
       setShowLaunchScreen(false);
     }, remaining);

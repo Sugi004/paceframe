@@ -249,7 +249,7 @@ export function AuthShell({ initialMode = 'signup' }: { initialMode?: AuthMode }
           <div className="hero-actions">
             <span className="hero-pill">Energy-aware planning</span>
             <span className="hero-pill">Burnout risk tracking</span>
-            <span className="hero-pill">AI daily guidance</span>
+            <span className="hero-pill">Product overview</span>
           </div>
 
           <div className="landing-metric-grid">
@@ -405,7 +405,7 @@ export function AuthShell({ initialMode = 'signup' }: { initialMode?: AuthMode }
         }}
       >
         <p style={{ margin: 0, maxWidth: '40rem' }}>
-          Paceframe web is for access, verification, and lightweight account support. Daily planning, recovery, and AI coaching are designed for the mobile product.
+          Paceframe web is for product information, verification, and lightweight account support. Daily planning and recovery are designed for the mobile product.
         </p>
         <nav aria-label="Legal" style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
           {legalLinks.map((link) => (

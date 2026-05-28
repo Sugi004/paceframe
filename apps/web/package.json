@@ -13,6 +13,7 @@
     "@paceframe/shared": "*",
     "@supabase/supabase-js": "^2.49.8",
     "firebase": "^11.7.1",
+    "firebase-admin": "^13.10.0",
     "next": "16.2.2",
     "react": "19.1.0",
     "react-dom": "19.1.0",

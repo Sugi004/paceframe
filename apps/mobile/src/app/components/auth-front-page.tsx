@@ -28,17 +28,17 @@ export function AuthFrontPage({
 }) {
   const title =
     authMode === 'signup'
-      ? 'A calmer system for work, care, and recovery.'
+      ? 'Create your account in the app, then verify by email.'
       : authMode === 'signin'
         ? 'Welcome back to your steadier pace.'
         : 'Recover access without losing your rhythm.';
 
   const subtitle =
     authMode === 'signup'
-      ? 'Paceframe helps you organize tasks, reminders, meals, rest, and burnout recovery in one mobile-first flow.'
+      ? 'Paceframe keeps account creation in mobile. We send the verification email through the web handoff, then you return here to log in.'
       : authMode === 'signin'
-        ? 'Sign in to reopen your pace-aware planner, daily check-ins, and recovery guidance.'
-        : 'Reset your password and get back into the product quickly.';
+        ? 'Sign in after you verify your email on the web page.'
+        : 'Reset your password from the web handoff and get back into the product quickly.';
 
   return (
     <View>
@@ -139,9 +139,9 @@ export function AuthFrontPage({
       </View>
 
       <View style={styles.authSupportCard}>
-        <Text style={styles.authSupportTitle}>What opens after sign in</Text>
+        <Text style={styles.authSupportTitle}>What happens next</Text>
         <Text style={styles.authSupportBody}>
-          Your daily planner, check-ins, recovery protocols, reminder controls, and AI coaching all live inside the mobile product.
+          Create your account here, then check your email, verify the link on the web page, and return to this app to log in and use your daily planner, check-ins, recovery protocols, and reminder controls.
         </Text>
       </View>
     </View>

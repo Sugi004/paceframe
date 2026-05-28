@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   createUserWithEmailAndPassword,
   onAuthStateChanged,
-  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut
 } from 'firebase/auth';
@@ -53,6 +52,7 @@ import {
   configureNotificationHandler,
   syncReminderNotificationsAsync
 } from '../services/notifications';
+import { requestPasswordResetEmail, requestVerificationEmail } from '../services/email-links';
 import { clamp, formatAIUserMessage, formatAuthErrorMessage, formatSyncErrorMessage, getAuthModeMessage, isSyncSetupIssue, shiftTime } from '../utils';
 
 const AI_REQUEST_DEDUPE_WINDOW_MS = 10_000;
@@ -695,17 +695,17 @@ export function usePaceframeApp(): PaceframeAppController {
   }
 
   function handleTabChange(tab: PaceframeAppController['activeTab']) {
-    setActiveTab(tab);
+    const hasPendingTasks = dashboard.tasks.some((task) => task.status === 'pending');
 
-    if (tab !== 'plan') {
+    if (tab === 'plan') {
+      setPlanSessionEnergyLane(null);
+      setPlanEnergyGateOpen(hasPendingTasks);
+    } else {
       setPlanEnergyGateOpen(false);
       setPlanSessionEnergyLane(null);
-      return;
     }
 
-    const hasPendingTasks = dashboard.tasks.some((task) => task.status === 'pending');
-    setPlanSessionEnergyLane(null);
-    setPlanEnergyGateOpen(hasPendingTasks);
+    setActiveTab(tab);
   }
 
   async function submitAssistantQuestion(promptOverride?: string) {
@@ -817,50 +817,47 @@ export function usePaceframeApp(): PaceframeAppController {
 
       if (authMode === 'signup') {
         const credential = await createUserWithEmailAndPassword(auth, authEmail.trim(), authPassword);
-        await credential.user.getIdToken(true);
-        setDashboard(
-          mergeDashboardState({
-            profile: {
-              ...mockDashboard.profile,
-              firstName: '',
-              roleLabel: '',
-              primaryGoal: '',
-              onboardingComplete: false
-            },
-            tasks: [],
-            reflection: {
-              intention: '',
-              eveningNote: '',
-              gratitude: ''
-            },
-            carePlan: {
-              ...mockDashboard.carePlan,
-              hydrationDone: 0,
-              mealsDone: 0,
-              movementDone: 0,
-              restDone: 0
-            },
-            streakDays: 0,
-            weeklyBurnoutScores: []
-          })
-        );
-        setActiveTab('account');
-        setAuthStatus('idle');
-        setAuthMessage('Account created. Let’s personalize Paceframe for your rhythm.');
+        try {
+          await requestVerificationEmail(credential.user.email ?? authEmail.trim());
+          setAuthStatus('sent');
+          setAuthMessage('Account created. Check your email, verify it on the web page, then return to log in.');
+        } catch (error) {
+          setAuthStatus('error');
+          setAuthMessage(
+            error instanceof Error && error.message.trim()
+              ? error.message
+              : 'Account created, but the verification email could not be sent yet.'
+          );
+        } finally {
+          await signOut(auth);
+        }
         return;
       }
 
       if (authMode === 'signin') {
         const credential = await signInWithEmailAndPassword(auth, authEmail.trim(), authPassword);
+        await credential.user.reload();
         await credential.user.getIdToken(true);
+        if (!credential.user.emailVerified) {
+          try {
+            await requestVerificationEmail(credential.user.email ?? authEmail.trim());
+            setAuthStatus('sent');
+            setAuthMessage('We sent a new verification email. Open it on the web, then return to log in again.');
+          } catch {
+            setAuthStatus('sent');
+            setAuthMessage('Please verify your email on the web page first, then come back and log in again.');
+          }
+          await signOut(auth);
+          return;
+        }
         setAuthStatus('idle');
         setAuthMessage('Signed in successfully.');
         return;
       }
 
-      await sendPasswordResetEmail(auth, authEmail.trim());
+      await requestPasswordResetEmail(authEmail.trim());
       setAuthStatus('sent');
-      setAuthMessage('Password reset email sent. Check your inbox to continue.');
+      setAuthMessage('Password reset email sent. Open the web link to finish resetting, then log in again in the app.');
     } catch (error) {
       setAuthStatus('error');
       setAuthMessage(formatAuthErrorMessage(error, authMode));

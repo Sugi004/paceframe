@@ -133,6 +133,18 @@ export function LoadingScreen() {
             Syncing your signals, reminders, and today&apos;s safest high-impact plan.
           </Text>
 
+          <View style={styles.launchPillRow}>
+            <View style={[styles.launchPill, styles.launchPillCool]}>
+              <Text style={styles.launchPillText}>signals</Text>
+            </View>
+            <View style={[styles.launchPill, styles.launchPillWarm]}>
+              <Text style={styles.launchPillText}>recovery</Text>
+            </View>
+            <View style={[styles.launchPill, styles.launchPillSand]}>
+              <Text style={styles.launchPillText}>plan</Text>
+            </View>
+          </View>
+
           <View style={styles.statusRail}>
             <Animated.View
               style={[
@@ -191,7 +203,18 @@ const styles = StyleSheet.create({
   content: {
     width: '100%',
     alignItems: 'center',
-    justifyContent: 'center'
+    justifyContent: 'center',
+    paddingHorizontal: 28,
+    paddingVertical: 30,
+    borderRadius: 36,
+    backgroundColor: 'rgba(8, 17, 36, 0.64)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    shadowColor: '#020816',
+    shadowOpacity: 0.34,
+    shadowRadius: 30,
+    shadowOffset: { width: 0, height: 18 },
+    elevation: 10
   },
   eyebrow: {
     marginBottom: 16,
@@ -218,6 +241,38 @@ const styles = StyleSheet.create({
     fontSize: 18,
     lineHeight: 28,
     textAlign: 'center'
+  },
+  launchPillRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    justifyContent: 'center',
+    marginTop: 22
+  },
+  launchPill: {
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderWidth: 1
+  },
+  launchPillCool: {
+    backgroundColor: 'rgba(142, 217, 255, 0.12)',
+    borderColor: 'rgba(142, 217, 255, 0.24)'
+  },
+  launchPillWarm: {
+    backgroundColor: 'rgba(255, 107, 61, 0.12)',
+    borderColor: 'rgba(255, 107, 61, 0.24)'
+  },
+  launchPillSand: {
+    backgroundColor: 'rgba(255, 211, 110, 0.12)',
+    borderColor: 'rgba(255, 211, 110, 0.24)'
+  },
+  launchPillText: {
+    color: '#f6fbff',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase'
   },
   statusRail: {
     width: 160,

@@ -1,12 +1,24 @@
+import Constants from 'expo-constants';
 import type { AuthMode } from './types';
+
+type ExpoExtra = {
+  web?: {
+    siteUrl?: string;
+  };
+};
+
+export function getWebAppUrl() {
+  const extra = (Constants.expoConfig?.extra ?? {}) as ExpoExtra;
+  return process.env.EXPO_PUBLIC_SITE_URL ?? extra.web?.siteUrl ?? 'http://127.0.0.1:3001';
+}
 
 export function getAuthModeMessage(mode: AuthMode) {
   if (mode === 'signup') {
-    return 'Create your Paceframe account to keep planning, reminders, and recovery tied to one identity.';
+    return 'Create your Paceframe account in the app, then verify your email on the web page and return to log in.';
   }
 
   if (mode === 'signin') {
-    return 'Sign in to continue where your pacing, recovery, and routines left off.';
+    return 'Sign in after you have verified your email on the web page.';
   }
 
   return 'Enter your email and we will send a password reset message.';

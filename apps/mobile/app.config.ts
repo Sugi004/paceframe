@@ -84,6 +84,9 @@ const config: ExpoConfig = {
     ai: {
       baseUrl: envValue('EXPO_PUBLIC_AI_API_URL')
     },
+    web: {
+      siteUrl: envValue('EXPO_PUBLIC_SITE_URL')
+    },
     notifications: {
       defaultChannel: 'paceframe-reminders'
     }

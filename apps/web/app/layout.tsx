@@ -2,7 +2,7 @@ import './globals.css';
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://127.0.0.1:3000';
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://127.0.0.1:3001';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     default: 'Paceframe',
     template: '%s | Paceframe'
   },
-  description: 'Energy-aware planning, burnout recovery, and AI guidance for people who want calmer execution.',
+  description: 'Energy-aware planning and burnout recovery for people who want calmer execution.',
   applicationName: 'Paceframe',
   alternates: {
     canonical: '/'
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     follow: true
   },
   category: 'productivity',
-  keywords: ['Paceframe', 'burnout recovery', 'energy aware planning', 'AI coach', 'task planning']
+  keywords: ['Paceframe', 'burnout recovery', 'energy aware planning', 'task planning']
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

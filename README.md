@@ -5,7 +5,7 @@ Paceframe is a mobile-first personal regulation platform that helps people plan 
 ## Product shape
 
 - `apps/mobile`: primary product for planning, recovery, reminders, care tracking, reflection, and AI coaching
-- `apps/web`: lightweight auth and verification shell for account access
+- `apps/web`: public product info, verification, and password recovery shell
 - `packages/shared`: shared domain models, planning engine, AI coach logic, and seed state
 - `packages/mcp`: MCP server scaffolding for AI-powered assistants to read plans, summaries, and coaching context
 - `supabase`: database schema and starter policies
@@ -37,8 +37,17 @@ The web shell expects the following production-facing values:
 - `NEXT_PUBLIC_FIREBASE_*`: Firebase web client configuration
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` or `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+- `RESEND_API_KEY`: used by the web server to send verification and reset emails
+- `RESEND_FROM_EMAIL`: verified sender address used in those emails
+- `FIREBASE_ADMIN_PROJECT_ID`
+- `FIREBASE_ADMIN_CLIENT_EMAIL`
+- `FIREBASE_ADMIN_PRIVATE_KEY`
 
 For local development, `NEXT_PUBLIC_SITE_URL` can remain unset and the app will fall back to `http://127.0.0.1:3000`.
+
+### Mobile email handoff
+
+Paceframe creates accounts in the mobile app, then asks the web server to generate and send the verification or password reset email through Resend. The email links land on `/verify` and `/reset` on the public web shell, where the action code is completed and the user is told to return to the app.
 
 ## Current MVP
 
@@ -52,7 +61,7 @@ For local development, `NEXT_PUBLIC_SITE_URL` can remain unset and the app will 
 - AI daily brief and AI coach recommendations
 - Reflection and journal-style memory inputs
 - Suggested recovery protocols
-- Web email-link sign-in and verification shell
+- Web product info, verification, and password recovery shell
 - MCP server tools for plans, summaries, reminders, completed tasks, and recovery context
 
 ## Web shell production notes

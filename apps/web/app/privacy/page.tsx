@@ -9,18 +9,18 @@ export const metadata: Metadata = {
 const sections = [
   {
     title: 'What Paceframe collects',
-    body: 'Paceframe collects the information needed to run account access and the product itself. This can include your email address, authentication identifiers, planning state, check-ins, routines, reminder preferences, and AI prompts you intentionally send through the product.'
+    body: 'Paceframe collects the information needed to run account access and the product itself. This can include your email address, authentication identifiers, planning state, check-ins, routines, and reminder preferences.'
   },
   {
     title: 'How the data is used',
-    body: 'We use data to authenticate you, sync your account state, generate recommendations, improve reliability, and support core product features such as planning, recovery guidance, reminders, and AI-assisted coaching.'
+    body: 'We use data to authenticate you, sync your account state, improve reliability, and support core product features such as planning, recovery guidance, and reminders.'
   },
   {
     title: 'Third-party services',
-    body: 'Paceframe currently relies on Firebase Authentication for account access, Supabase for database and sync infrastructure, and model providers for AI responses. Those providers process the minimum information needed to perform their part of the service.'
+    body: 'Paceframe currently relies on Firebase Authentication for account access and Supabase for database and sync infrastructure. Those services process the minimum information needed to perform their part of the product.'
   },
   {
-    title: 'Health and AI boundaries',
+    title: 'Health boundaries',
     body: 'Paceframe is a self-management and reflection tool. It is not a medical device, does not provide therapy, and should not be used as a substitute for licensed mental health or medical care.'
   },
   {
@@ -49,17 +49,15 @@ export default function PrivacyPage() {
           </div>
         </div>
 
-        <div className="auth-panel auth-panel-upgraded">
-          <div className="auth-panel-header">
-            <p className="auth-panel-label">Quick links</p>
-            <h2>Review and return</h2>
-            <p className="auth-message">Use the web shell for access and legal review, then continue your planning and recovery flow in the mobile app.</p>
-          </div>
-          <div className="auth-inline-note">
-            <Link className="action-button auth-submit" href="/">
-              Back to account access
+        <div className="panel web-hub-panel">
+          <p className="web-hub-label">Quick links</p>
+          <h2>Review and return</h2>
+          <p className="web-hub-note-copy">Use the web shell for product and legal review, then continue your planning and recovery flow in the mobile app.</p>
+          <div className="web-link-row">
+            <Link className="web-link-chip active" href="/">
+              Back to overview
             </Link>
-            <Link className="ghost-button" href="/terms">
+            <Link className="web-link-chip" href="/terms">
               Read terms
             </Link>
           </div>
