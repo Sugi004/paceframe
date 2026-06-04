@@ -4,6 +4,8 @@ import type { ReactNode } from 'react';
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://127.0.0.1:3001';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {

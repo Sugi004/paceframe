@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -292,13 +291,13 @@ export function AuthShell({ initialMode = 'signup' }: { initialMode?: AuthMode }
             <>
               <div className="auth-mode-switch">
                 {(['signup', 'signin', 'reset'] as AuthMode[]).map((nextMode) => (
-                  <Link
+                  <a
                     key={nextMode}
                     className={nextMode === mode ? 'mode-chip active' : 'mode-chip'}
                     href={nextMode === 'signup' ? '/' : `/?mode=${nextMode}`}
                   >
                     {nextMode === 'signup' ? 'Create account' : nextMode === 'signin' ? 'Sign in' : 'Reset'}
-                  </Link>
+                  </a>
                 ))}
               </div>
 
@@ -345,8 +344,8 @@ export function AuthShell({ initialMode = 'signup' }: { initialMode?: AuthMode }
                 ) : null}
                 <p style={{ margin: 0, fontSize: '0.9rem', opacity: 0.82 }}>
                   By continuing, you agree to Paceframe&apos;s{' '}
-                  <Link href="/terms">Terms</Link> and acknowledge the{' '}
-                  <Link href="/privacy">Privacy Policy</Link>.
+                  <a href="/terms">Terms</a> and acknowledge the{' '}
+                  <a href="/privacy">Privacy Policy</a>.
                 </p>
               </div>
             </>
@@ -409,9 +408,9 @@ export function AuthShell({ initialMode = 'signup' }: { initialMode?: AuthMode }
         </p>
         <nav aria-label="Legal" style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
           {legalLinks.map((link) => (
-            <Link key={link.href} href={link.href}>
+            <a key={link.href} href={link.href}>
               {link.label}
-            </Link>
+            </a>
           ))}
         </nav>
       </footer>

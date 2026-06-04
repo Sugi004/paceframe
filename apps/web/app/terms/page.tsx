@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -54,12 +53,12 @@ export default function TermsPage() {
           <h2>Continue with context</h2>
           <p className="web-hub-note-copy">Review the legal basics here, then head back to the product overview or read how Paceframe handles data.</p>
           <div className="web-link-row">
-            <Link className="web-link-chip active" href="/">
+            <a className="web-link-chip active" href="/">
               Back to overview
-            </Link>
-            <Link className="web-link-chip" href="/privacy">
+            </a>
+            <a className="web-link-chip" href="/privacy">
               Read privacy policy
-            </Link>
+            </a>
           </div>
         </div>
       </section>

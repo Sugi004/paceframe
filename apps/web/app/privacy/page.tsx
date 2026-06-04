@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -54,12 +53,12 @@ export default function PrivacyPage() {
           <h2>Review and return</h2>
           <p className="web-hub-note-copy">Use the web shell for product and legal review, then continue your planning and recovery flow in the mobile app.</p>
           <div className="web-link-row">
-            <Link className="web-link-chip active" href="/">
+            <a className="web-link-chip active" href="/">
               Back to overview
-            </Link>
-            <Link className="web-link-chip" href="/terms">
+            </a>
+            <a className="web-link-chip" href="/terms">
               Read terms
-            </Link>
+            </a>
           </div>
         </div>
       </section>

@@ -33,6 +33,8 @@ body {
 .page-shell {
   width: min(1120px, calc(100% - 32px));
   margin: 0 auto;
+  display: grid;
+  gap: 10px;
   padding: 18px 0 44px;
 }
 
@@ -55,7 +57,7 @@ body {
   display: grid;
   grid-template-columns: minmax(0, 1.65fr) minmax(280px, 360px);
   gap: 14px;
-  margin-bottom: 10px;
+  margin: 0;
   position: relative;
   overflow: hidden;
   align-items: stretch;
@@ -147,6 +149,7 @@ body {
 
 .auth-shell {
   padding-top: 52px;
+  gap: 16px;
 }
 
 .auth-hero {
@@ -255,6 +258,14 @@ body {
   font-size: 1rem;
 }
 
+.panel {
+  margin: 0;
+  border-radius: 28px;
+  padding: 16px;
+  color: var(--ink-dark);
+  background: linear-gradient(145deg, rgba(255, 250, 244, 0.96), rgba(233, 242, 255, 0.92));
+}
+
 .auth-panel {
   position: relative;
   z-index: 1;
@@ -279,12 +290,12 @@ body {
 
 .auth-panel h2 {
   margin: 0 0 12px;
-  color: white;
+  color: rgb(0, 0, 0);
   font-size: 2rem;
 }
 
 .auth-panel-label {
-  color: #9bdcff;
+  color: #000000;
   font-size: 0.78rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -293,7 +304,7 @@ body {
 }
 
 .auth-message {
-  color: rgba(241, 247, 255, 0.84);
+  color: rgba(0, 0, 0, 0.84);
   line-height: 1.6;
   margin-bottom: 18px;
 }
@@ -304,27 +315,29 @@ body {
 }
 
 .auth-form-upgraded {
-  gap: 10px;
+  gap: 12px;
 }
 
 .auth-label {
-  color: lab(0% 0 0 / 0.76);
+  color: rgba(0, 0, 0, 0.84);
   font-size: 0.9rem;
   font-weight: 700;
 }
 
 .auth-input {
   width: 100%;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(0, 0, 0, 0.14);
   border-radius: 18px;
   padding: 14px 16px;
   font: inherit;
-  color: rgb(18, 1, 1);
-  background: rgba(0, 0, 0, 0.08);
+  font-size: 1rem;
+  line-height: 1.4;
+  color: #010509;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .auth-input::placeholder {
-  color: rgba(23, 1, 1, 0.42);
+  color: rgba(0, 0, 0, 0.5);
 }
 
 .auth-submit {
@@ -475,12 +488,12 @@ body {
 
 .stats-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  margin-bottom: 12px;
+  margin-bottom: 0;
 }
 
 .two-up {
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  margin-bottom: 12px;
+  margin-bottom: 0;
 }
 
 .three-up {
@@ -488,7 +501,7 @@ body {
 }
 
 .panel {
-  margin: 10 0 10 0;
+  margin: 0;
   border-radius: 28px;
   padding: 16px;
   color: var(--ink-dark);
@@ -696,11 +709,52 @@ body {
   color: rgba(255,255,255,0.72);
 }
 
+.panel.auth-panel {
+  gap: 14px;
+}
+
+.panel.auth-panel .auth-panel-label {
+  color: #9bdcff;
+}
+
+.panel.auth-panel .auth-message {
+  color: rgba(0, 0, 0, 0.84);
+}
+
+.panel.auth-panel .auth-label {
+  color: rgba(0, 0, 0, 0.84);
+}
+
+.panel.auth-panel .auth-input {
+  color: #000204;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.panel.auth-panel .auth-input::placeholder {
+  color: rgba(0, 0, 0, 0.5);
+}
+
+.reset-form-panel {
+  gap: 16px;
+}
+
+.reset-form {
+  gap: 14px;
+}
+
+.reset-form .auth-input {
+  margin-bottom: 2px;
+}
+
+.reset-form .auth-submit {
+  margin-top: 8px;
+}
+
 .panel.moss {
   background:
     radial-gradient(circle at top right, rgba(184, 255, 94, 0.18), transparent 24%),
     linear-gradient(180deg, #117a61 0%, #165c54 100%);
-  color: white;
+  color: rgb(0, 0, 0);
 }
 
 .panel.moss h2,

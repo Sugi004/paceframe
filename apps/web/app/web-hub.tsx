@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { PaceframeLogo } from '../src/components/paceframe-logo';
 
 const productNotes = [
@@ -56,18 +55,18 @@ export function WebHub() {
       <section className="panel web-hub-panel">
         <p className="web-hub-label">Useful links</p>
         <div className="web-link-row">
-          <Link className="web-link-chip active" href="/">
+          <a className="web-link-chip active" href="/">
             Paceframe web hub
-          </Link>
-          <Link className="web-link-chip" href="/reset">
+          </a>
+          <a className="web-link-chip" href="/reset">
             Reset password
-          </Link>
-          <Link className="web-link-chip" href="/privacy">
+          </a>
+          <a className="web-link-chip" href="/privacy">
             Privacy
-          </Link>
-          <Link className="web-link-chip" href="/terms">
+          </a>
+          <a className="web-link-chip" href="/terms">
             Terms
-          </Link>
+          </a>
         </div>
       </section>
 

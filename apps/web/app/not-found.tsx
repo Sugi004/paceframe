@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { PaceframeLogo } from '../src/components/paceframe-logo';
 
 export default function NotFound() {
@@ -20,12 +19,12 @@ export default function NotFound() {
           </p>
 
           <div className="hero-actions">
-            <Link className="mode-chip active" href="/">
+            <a className="mode-chip active" href="/">
               Return home
-            </Link>
-            <Link className="mode-chip" href="/privacy">
+            </a>
+            <a className="mode-chip" href="/privacy">
               Privacy
-            </Link>
+            </a>
           </div>
         </div>
       </section>

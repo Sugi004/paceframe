@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { confirmPasswordReset, verifyPasswordResetCode } from 'firebase/auth';
 import { PaceframeLogo } from '../../src/components/paceframe-logo';
@@ -162,21 +161,21 @@ export default function ResetPasswordPage() {
               <strong>{email || 'unknown'}</strong>
             </div>
             <div className="signal-meter-item">
-              <span>Page role</span>
+              <span>Page purpose</span>
               <strong>Recovery only</strong>
             </div>
             <div className="signal-meter-item">
-              <span>App step</span>
-              <strong>Login in mobile</strong>
+              <span>Next step</span>
+              <strong>Open the app</strong>
             </div>
           </div>
         </aside>
       </section>
 
       {status !== 'success' ? (
-        <section className="panel auth-panel auth-panel-upgraded">
+        <section className="panel auth-panel auth-panel-upgraded reset-form-panel">
           <p className="auth-panel-label">Choose a new password</p>
-          <form onSubmit={handleSubmit} className="auth-form">
+          <form onSubmit={handleSubmit} className="auth-form auth-form-upgraded reset-form">
             <label className="auth-label" htmlFor="password">
               New password
             </label>
@@ -211,15 +210,15 @@ export default function ResetPasswordPage() {
       <section className="panel web-hub-panel">
         <p className="web-hub-label">Useful links</p>
         <div className="web-link-row">
-          <Link className="web-link-chip active" href="/">
+          <a className="web-link-chip active" href="/">
             Paceframe web hub
-          </Link>
-          <Link className="web-link-chip" href="/privacy">
+          </a>
+          <a className="web-link-chip" href="/privacy">
             Privacy
-          </Link>
-          <Link className="web-link-chip" href="/terms">
+          </a>
+          <a className="web-link-chip" href="/terms">
             Terms
-          </Link>
+          </a>
         </div>
       </section>
     </main>
