@@ -37,7 +37,7 @@ export function AuthFrontPage({
     authMode === 'signup'
       ? 'Paceframe keeps account creation in mobile. We send the verification email through the web handoff, then you return here to log in.'
       : authMode === 'signin'
-        ? 'Sign in after you verify your email on the web page.'
+        ? 'Sign in with your existing account. New accounts still need to verify before first use.'
         : 'Reset your password from the web handoff and get back into the product quickly.';
 
   return (

@@ -1,26 +1,27 @@
+import { sendEmailVerification, sendPasswordResetEmail, type User } from 'firebase/auth';
+import { auth, hasFirebaseConfig } from '../../lib/firebase';
 import { getWebAppUrl } from '../utils';
 
-async function sendEmailLink(path: string, email: string) {
-  const response = await fetch(`${getWebAppUrl().replace(/\/$/, '')}${path}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json'
-    },
-    body: JSON.stringify({ email })
-  });
-
-  const payload = (await response.json().catch(() => null)) as { message?: string } | null;
-
-  if (!response.ok) {
-    throw new Error(payload?.message ?? 'Could not send the email right now.');
-  }
+function buildActionCodeUrl(path: '/verify' | '/reset') {
+  return `${getWebAppUrl().replace(/\/$/, '')}${path}`;
 }
 
-export async function requestVerificationEmail(email: string) {
-  await sendEmailLink('/api/auth/email/verification', email);
+export async function requestVerificationEmail(user: User) {
+  if (!hasFirebaseConfig || !auth) {
+    throw new Error('Firebase is not configured for mobile yet.');
+  }
+
+  await sendEmailVerification(user, {
+    url: buildActionCodeUrl('/verify')
+  });
 }
 
 export async function requestPasswordResetEmail(email: string) {
-  await sendEmailLink('/api/auth/email/reset', email);
+  if (!hasFirebaseConfig || !auth) {
+    throw new Error('Firebase is not configured for mobile yet.');
+  }
+
+  await sendPasswordResetEmail(auth, email, {
+    url: buildActionCodeUrl('/reset')
+  });
 }

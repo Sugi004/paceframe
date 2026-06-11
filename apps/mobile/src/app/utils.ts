@@ -18,7 +18,7 @@ export function getAuthModeMessage(mode: AuthMode) {
   }
 
   if (mode === 'signin') {
-    return 'Sign in after you have verified your email on the web page.';
+    return 'Sign in with your existing Paceframe account. New accounts still verify their email before first use.';
   }
 
   return 'Enter your email and we will send a password reset message.';

@@ -734,20 +734,84 @@ body {
   color: rgba(0, 0, 0, 0.5);
 }
 
-.reset-form-panel {
+.reset-page {
   gap: 16px;
 }
 
-.reset-form {
-  gap: 14px;
+.reset-page .reset-form-panel {
+  gap: 18px;
+  background:
+    radial-gradient(circle at top right, rgba(62, 219, 255, 0.14), transparent 28%),
+    linear-gradient(145deg, rgba(255, 250, 244, 0.98), rgba(230, 239, 251, 0.96));
+  color: #0b1430;
 }
 
-.reset-form .auth-input {
-  margin-bottom: 2px;
+.reset-page .panel.auth-panel .auth-panel-label {
+  color: #5f6f8f;
 }
 
-.reset-form .auth-submit {
-  margin-top: 8px;
+.reset-page .panel.auth-panel .auth-message {
+  color: #4b5a79;
+}
+
+.reset-page .panel.auth-panel .auth-label {
+  color: #0b1430;
+}
+
+.reset-page .panel.auth-panel .auth-input {
+  color: #0b1430;
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(11, 20, 48, 0.12);
+}
+
+.reset-page .panel.auth-panel .auth-input::placeholder {
+  color: rgba(75, 90, 121, 0.78);
+}
+
+.reset-page .reset-request-panel,
+.reset-page .reset-final-panel,
+.reset-page .reset-link-panel {
+  gap: 16px;
+}
+
+.reset-page .reset-form {
+  gap: 16px;
+}
+
+.reset-page .reset-form .auth-input {
+  margin-bottom: 4px;
+}
+
+.reset-page .reset-form .auth-submit {
+  margin-top: 10px;
+}
+
+.reset-page .reset-links-panel {
+  margin-top: 2px;
+}
+
+.reset-email-note {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(16, 32, 66, 0.08);
+  color: #0b1430;
+}
+
+.reset-email-note span {
+  color: #5f6f8f;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.reset-email-note strong {
+  color: #0b1430;
+  font-size: 1rem;
+  word-break: break-word;
 }
 
 .panel.moss {

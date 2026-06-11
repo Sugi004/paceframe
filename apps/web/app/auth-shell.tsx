@@ -23,7 +23,7 @@ type AuthMode = 'signin' | 'signup' | 'reset';
 const modeCopy: Record<AuthMode, { title: string; subtitle: string; button: string }> = {
   signin: {
     title: 'Welcome back',
-    subtitle: 'Sign in to continue using Paceframe across mobile and web account access.',
+    subtitle: 'Sign in with your existing Paceframe account. New accounts still verify their email before first use.',
     button: 'Sign in'
   },
   signup: {
@@ -180,9 +180,11 @@ export function AuthShell({ initialMode = 'signup' }: { initialMode?: AuthMode }
         return;
       }
 
-      await sendPasswordResetEmail(auth, email.trim());
+      await sendPasswordResetEmail(auth, email.trim(), {
+        url: `${window.location.origin}/reset`
+      });
       setStatus('sent');
-      setMessage('Password reset email sent. Check your inbox and follow the instructions.');
+      setMessage('Password reset email sent from Firebase for Paceframe. Check your inbox and follow the instructions.');
     } catch (error) {
       setStatus('error');
       setMessage(formatAuthErrorMessage(error, mode));

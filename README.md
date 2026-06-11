@@ -37,8 +37,6 @@ The web shell expects the following production-facing values:
 - `NEXT_PUBLIC_FIREBASE_*`: Firebase web client configuration
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` or `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
-- `RESEND_API_KEY`: used by the web server to send verification and reset emails
-- `RESEND_FROM_EMAIL`: verified sender address used in those emails
 - `FIREBASE_ADMIN_PROJECT_ID`
 - `FIREBASE_ADMIN_CLIENT_EMAIL`
 - `FIREBASE_ADMIN_PRIVATE_KEY`
@@ -47,7 +45,7 @@ For local development, `NEXT_PUBLIC_SITE_URL` can remain unset and the app will 
 
 ### Mobile email handoff
 
-Paceframe creates accounts in the mobile app, then asks the web server to generate and send the verification or password reset email through Resend. The email links land on `/verify` and `/reset` on the public web shell, where the action code is completed and the user is told to return to the app.
+Paceframe creates accounts in the mobile app, then uses Firebase Authentication to send verification and password reset emails. The email links land on `/verify` and `/reset` on the public web shell, where the action code is completed and the user is told to return to the app. To brand the email copy, customize the Firebase Authentication email templates in the Firebase Console for the current project.
 
 ## Current MVP
 

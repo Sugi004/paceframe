@@ -818,7 +818,7 @@ export function usePaceframeApp(): PaceframeAppController {
       if (authMode === 'signup') {
         const credential = await createUserWithEmailAndPassword(auth, authEmail.trim(), authPassword);
         try {
-          await requestVerificationEmail(credential.user.email ?? authEmail.trim());
+          await requestVerificationEmail(credential.user);
           setAuthStatus('sent');
           setAuthMessage('Account created. Check your email, verify it on the web page, then return to log in.');
         } catch (error) {
@@ -838,20 +838,12 @@ export function usePaceframeApp(): PaceframeAppController {
         const credential = await signInWithEmailAndPassword(auth, authEmail.trim(), authPassword);
         await credential.user.reload();
         await credential.user.getIdToken(true);
-        if (!credential.user.emailVerified) {
-          try {
-            await requestVerificationEmail(credential.user.email ?? authEmail.trim());
-            setAuthStatus('sent');
-            setAuthMessage('We sent a new verification email. Open it on the web, then return to log in again.');
-          } catch {
-            setAuthStatus('sent');
-            setAuthMessage('Please verify your email on the web page first, then come back and log in again.');
-          }
-          await signOut(auth);
-          return;
-        }
         setAuthStatus('idle');
-        setAuthMessage('Signed in successfully.');
+        setAuthMessage(
+          credential.user.emailVerified
+            ? 'Signed in successfully.'
+            : 'Signed in successfully. If this is a brand-new account, verify the email from your inbox before your first full use.'
+        );
         return;
       }
 
