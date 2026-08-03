@@ -3,6 +3,10 @@ import type { Tab } from './types';
 
 export const STORAGE_KEY = 'paceframe-dashboard-v1';
 
+export function getDashboardStorageKey(userId?: string | null) {
+  return userId ? `${STORAGE_KEY}:${userId}` : STORAGE_KEY;
+}
+
 export const tabs: Array<{ key: Tab; label: string }> = [
   { key: 'overview', label: 'Today' },
   { key: 'assistant', label: 'Coach' },

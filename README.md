@@ -47,6 +47,15 @@ For local development, `NEXT_PUBLIC_SITE_URL` can remain unset and the app will 
 
 Paceframe creates accounts in the mobile app, then uses Firebase Authentication to send verification and password reset emails. The email links land on `/verify` and `/reset` on the public web shell, where the action code is completed and the user is told to return to the app. To brand the email copy, customize the Firebase Authentication email templates in the Firebase Console for the current project.
 
+### Mobile build identifiers
+
+For a real iPhone install or store build, set the final platform IDs with:
+
+- `EXPO_PUBLIC_IOS_BUNDLE_IDENTIFIER`
+- `EXPO_PUBLIC_ANDROID_PACKAGE_NAME`
+
+If those are not set, the app falls back to `com.paceframe.app` for local device testing.
+
 ## Current MVP
 
 - Energy-aware day planning

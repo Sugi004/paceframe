@@ -23,10 +23,12 @@
       "backgroundColor": "#091221"
     },
     "ios": {
+      "bundleIdentifier": "com.paceframe.app",
       "supportsTablet": true,
       "icon": "./assets/icon.png"
     },
     "android": {
+      "package": "com.paceframe.app",
       "permissions": ["RECEIVE_BOOT_COMPLETED", "VIBRATE"],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon-foreground.png",

@@ -57,10 +57,12 @@ const config: ExpoConfig = {
     backgroundColor: '#091221'
   },
   ios: {
+    bundleIdentifier: envValue('EXPO_PUBLIC_IOS_BUNDLE_IDENTIFIER') || 'com.paceframe.app',
     supportsTablet: true,
     icon: './assets/icon.png'
   },
   android: {
+    package: envValue('EXPO_PUBLIC_ANDROID_PACKAGE_NAME') || 'com.paceframe.app',
     permissions: ['RECEIVE_BOOT_COMPLETED', 'VIBRATE'],
     adaptiveIcon: {
       foregroundImage: './assets/adaptive-icon-foreground.png',

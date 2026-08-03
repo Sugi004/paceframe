@@ -73,7 +73,7 @@ export default function App() {
     return () => clearTimeout(timeoutId);
   }, [app.activeTab, app.dashboard.profile.onboardingComplete, app.user, visibleTab]);
 
-  if (!app.isReady || showLaunchScreen) {
+  if (!app.isReady || showLaunchScreen || (app.user && !app.isCloudHydrated)) {
     return (
       <SafeAreaProvider>
         <LoadingScreen />
@@ -107,6 +107,9 @@ export default function App() {
           onModeChange={app.handleAuthModeChange}
           onEmailChange={app.setAuthEmail}
           onPasswordChange={app.setAuthPassword}
+          onResendVerificationEmail={() => {
+            void app.handleResendVerificationEmail();
+          }}
           onSubmit={() => {
             void app.handleAuthSubmit();
           }}
@@ -125,6 +128,24 @@ export default function App() {
           setCrashWindow={app.setCrashWindow}
           adjustCareTarget={app.adjustCareTarget}
           completeOnboarding={app.completeOnboarding}
+        />
+      </ScrollView>
+    );
+  }
+
+  if (!app.dashboard.profile.initialCheckInComplete) {
+    return renderShell(
+      <ScrollView style={styles.screen} contentContainerStyle={styles.pageContent} showsVerticalScrollIndicator={false}>
+        <CheckInScreen
+          dashboard={app.dashboard}
+          adjustSleepTrouble={app.adjustSleepTrouble}
+          adjustEnergy={app.adjustEnergy}
+          adjustCareMetric={app.adjustCareMetric}
+          toggleReminderEnabled={app.toggleReminderEnabled}
+          shiftReminder={app.shiftReminder}
+          updateReflectionField={app.updateReflectionField}
+          isFirstRunGate
+          completeInitialCheckIn={app.completeInitialCheckIn}
         />
       </ScrollView>
     );
@@ -210,6 +231,7 @@ export default function App() {
             <AccountScreen
               user={app.user}
               handleSignOut={app.handleSignOut}
+              handleDeleteAccount={app.handleDeleteAccount}
               dashboard={app.dashboard}
               nextReminders={app.nextReminders}
               syncStatus={app.syncStatus}
@@ -219,6 +241,8 @@ export default function App() {
               setPlanningStyle={app.setPlanningStyle}
               setCrashWindow={app.setCrashWindow}
               adjustCareTarget={app.adjustCareTarget}
+              deleteAccountStatus={app.deleteAccountStatus}
+              deleteAccountMessage={app.deleteAccountMessage}
             />
           ) : null}
         </ScrollView>

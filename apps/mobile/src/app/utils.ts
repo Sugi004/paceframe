@@ -5,11 +5,35 @@ type ExpoExtra = {
   web?: {
     siteUrl?: string;
   };
+  firebase?: {
+    authDomain?: string;
+    projectId?: string;
+  };
 };
 
 export function getWebAppUrl() {
   const extra = (Constants.expoConfig?.extra ?? {}) as ExpoExtra;
-  return process.env.EXPO_PUBLIC_SITE_URL ?? extra.web?.siteUrl ?? 'http://127.0.0.1:3001';
+  const explicitSiteUrl = process.env.EXPO_PUBLIC_SITE_URL ?? extra.web?.siteUrl ?? '';
+
+  if (explicitSiteUrl) {
+    return explicitSiteUrl;
+  }
+
+  const authDomain = extra.firebase?.authDomain ?? process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN ?? '';
+
+  if (authDomain) {
+    return authDomain.startsWith('http://') || authDomain.startsWith('https://')
+      ? authDomain
+      : `https://${authDomain.replace(/^\/+/, '')}`;
+  }
+
+  const projectId = process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID ?? extra.firebase?.projectId ?? '';
+
+  if (projectId) {
+    return `https://${projectId}.firebaseapp.com`;
+  }
+
+  return 'http://127.0.0.1:3001';
 }
 
 export function getAuthModeMessage(mode: AuthMode) {
@@ -54,6 +78,29 @@ export function formatAuthErrorMessage(error: unknown, mode: AuthMode) {
         ? 'We could not send the reset email right now. Try again in a moment.'
         : 'We could not complete sign-in right now. Try again in a moment.';
   }
+}
+
+export function formatDeleteAccountErrorMessage(error: unknown) {
+  if (!(error instanceof Error)) {
+    return 'We could not delete your account right now.';
+  }
+
+  const code = typeof (error as unknown as { code?: unknown }).code === 'string' ? ((error as unknown as { code: string }).code ?? '') : '';
+  const normalized = `${code} ${error.message}`.toLowerCase();
+
+  if (normalized.includes('requires-recent-login')) {
+    return 'Please sign out and sign back in, then try deleting your account again so Paceframe can finish the Firebase step.';
+  }
+
+  if (normalized.includes('permission denied') || normalized.includes('row-level security') || normalized.includes('jwt')) {
+    return 'Paceframe could not remove your synced data right now. Try again once cloud access is ready.';
+  }
+
+  if (normalized.includes('network request failed') || normalized.includes('failed to fetch') || normalized.includes('could not reach')) {
+    return 'Paceframe could not reach the account deletion service. Try again in a moment.';
+  }
+
+  return 'We could not delete your account right now. Try again in a moment.';
 }
 
 export function formatSyncErrorMessage(error: unknown) {

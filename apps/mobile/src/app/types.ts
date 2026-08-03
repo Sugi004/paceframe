@@ -19,6 +19,7 @@ import type {
 export type Tab = 'overview' | 'assistant' | 'plan' | 'checkin' | 'reset' | 'account';
 export type AuthMode = 'signup' | 'signin' | 'reset';
 export type AuthStatus = 'idle' | 'working' | 'sent' | 'error';
+export type DeleteAccountStatus = 'idle' | 'working' | 'done' | 'error';
 export type SyncStatus = 'idle' | 'syncing' | 'synced' | 'error' | 'setup';
 export type AIStatus = 'idle' | 'loading' | 'ready' | 'error';
 
@@ -47,6 +48,8 @@ export interface PaceframeAppController {
   authStatus: AuthStatus;
   authMessage: string;
   authReady: boolean;
+  deleteAccountStatus: DeleteAccountStatus;
+  deleteAccountMessage: string;
   syncStatus: SyncStatus;
   syncMessage: string;
   aiStatus: AIStatus;
@@ -60,6 +63,7 @@ export interface PaceframeAppController {
   assistantHistory: AssistantThreadItem[];
   user: User | null;
   isReady: boolean;
+  isCloudHydrated: boolean;
   plan: TodayPlan;
   burnoutSignal: BurnoutSignal;
   aiCoach: AICoachCard;
@@ -71,7 +75,9 @@ export interface PaceframeAppController {
   nextReminders: ReminderItem[];
   handleAuthModeChange: (mode: AuthMode) => void;
   handleAuthSubmit: () => Promise<void>;
+  handleResendVerificationEmail: () => Promise<void>;
   handleSignOut: () => Promise<void>;
+  handleDeleteAccount: () => Promise<void>;
   adjustEnergy: (metric: 'stressLevel' | 'screenFatigue', direction: -1 | 1) => void;
   adjustSleepTrouble: (direction: -1 | 1) => void;
   handleAddTask: () => void;
@@ -90,5 +96,6 @@ export interface PaceframeAppController {
   retryLiveCoaching: () => void;
   selectEnergyLane: (level: EnergyLevel) => void;
   setWorkOrderingPreference: (preference: WorkOrderingPreference) => void;
+  completeInitialCheckIn: () => void;
   submitAssistantQuestion: (promptOverride?: string) => Promise<void>;
 }

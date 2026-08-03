@@ -91,6 +91,7 @@ export interface UserProfile {
   planningStyle: PlanningStyle;
   crashWindow: CrashWindow;
   onboardingComplete: boolean;
+  initialCheckInComplete: boolean;
 }
 
 export interface AICoachCard {

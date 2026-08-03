@@ -52,3 +52,11 @@ export async function saveRemoteDashboard(user: User, dashboard: DashboardState)
     throw new Error(error.message);
   }
 }
+
+export async function deleteRemoteUserData(user: User) {
+  const { error } = await supabase.from('users').delete().eq('id', user.uid);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+}

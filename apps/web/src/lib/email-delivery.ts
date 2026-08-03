@@ -4,7 +4,19 @@ import { getFirebaseAdminAuth } from './firebase-admin';
 type EmailKind = 'verification' | 'reset';
 
 function getSiteUrl() {
-  return getServerEnvValue('NEXT_PUBLIC_SITE_URL') || 'http://127.0.0.1:3001';
+  const explicitSiteUrl = getServerEnvValue('NEXT_PUBLIC_SITE_URL');
+
+  if (explicitSiteUrl) {
+    return explicitSiteUrl;
+  }
+
+  const projectId = getServerEnvValue('NEXT_PUBLIC_FIREBASE_PROJECT_ID') || getServerEnvValue('FIREBASE_ADMIN_PROJECT_ID');
+
+  if (projectId) {
+    return `https://${projectId}.firebaseapp.com`;
+  }
+
+  return 'http://127.0.0.1:3001';
 }
 
 function getResendApiKey() {

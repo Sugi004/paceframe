@@ -3,6 +3,7 @@
 ## Product QA
 - Verify sign up creates a new Firebase account and routes the user through the Paceframe verification handoff.
 - Verify existing users can sign in without being forced through verification again.
+- Verify the first app open after onboarding shows the blocking live check-in and routes to Today after the user continues.
 - Verify password reset opens the two-step web flow and returns the user to the app after the reset link is completed.
 - Verify onboarding saves profile, planning style, crash window, and care targets.
 - Verify the Plan tab always prompts for energy before planning when pending work exists.

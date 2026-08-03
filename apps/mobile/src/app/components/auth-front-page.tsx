@@ -13,6 +13,7 @@ export function AuthFrontPage({
   onModeChange,
   onEmailChange,
   onPasswordChange,
+  onResendVerificationEmail,
   onSubmit
 }: {
   authMode: AuthMode;
@@ -24,8 +25,12 @@ export function AuthFrontPage({
   onModeChange: (mode: AuthMode) => void;
   onEmailChange: (value: string) => void;
   onPasswordChange: (value: string) => void;
+  onResendVerificationEmail: () => void;
   onSubmit: () => void;
 }) {
+  const messageLower = message.toLowerCase();
+  const showVerificationResend = authReady && Boolean(email.trim()) && (messageLower.includes('verify') || messageLower.includes('verification'));
+
   const title =
     authMode === 'signup'
       ? 'Create your account in the app, then verify by email.'
@@ -136,6 +141,14 @@ export function AuthFrontPage({
             {authReady ? message : 'Firebase mobile auth is not configured yet. Add the Expo Firebase values in `.env` to activate sign in.'}
           </Text>
         </View>
+
+        {showVerificationResend ? (
+          <View style={styles.buttonRow}>
+            <Pressable onPress={onResendVerificationEmail} disabled={status === 'working'} style={[styles.secondaryButton, status === 'working' ? styles.disabledButton : undefined]}>
+              <Text style={styles.secondaryButtonLabel}>{status === 'working' ? 'Sending...' : 'Resend verification email'}</Text>
+            </Pressable>
+          </View>
+        ) : null}
       </View>
 
       <View style={styles.authSupportCard}>

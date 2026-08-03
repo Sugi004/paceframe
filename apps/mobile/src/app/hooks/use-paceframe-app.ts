@@ -1,7 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   createUserWithEmailAndPassword,
+  deleteUser,
   onAuthStateChanged,
   signInWithEmailAndPassword,
   signOut
@@ -37,7 +38,7 @@ import {
   type WorkOrderingPreference
 } from '@paceframe/shared';
 import { auth, hasFirebaseConfig } from '../../lib/firebase';
-import { STORAGE_KEY } from '../constants';
+import { getDashboardStorageKey, STORAGE_KEY } from '../constants';
 import type { AuthMode, PaceframeAppController } from '../types';
 import {
   fetchLatestAssistantThread,
@@ -46,14 +47,27 @@ import {
   persistAssistantConversation,
   persistReviewArtifacts
 } from '../services/ai-coaching';
-import { ensureRemoteUser, loadRemoteDashboard, saveRemoteDashboard } from '../services/dashboard-sync';
+import { deleteRemoteUserData, ensureRemoteUser, loadRemoteDashboard, saveRemoteDashboard } from '../services/dashboard-sync';
 import {
   cancelAllReminderNotificationsAsync,
   configureNotificationHandler,
   syncReminderNotificationsAsync
 } from '../services/notifications';
-import { requestPasswordResetEmail, requestVerificationEmail } from '../services/email-links';
-import { clamp, formatAIUserMessage, formatAuthErrorMessage, formatSyncErrorMessage, getAuthModeMessage, isSyncSetupIssue, shiftTime } from '../utils';
+import {
+  requestPasswordResetEmail,
+  requestVerificationEmail,
+  requestVerificationEmailByEmail
+} from '../services/email-links';
+import {
+  clamp,
+  formatAIUserMessage,
+  formatAuthErrorMessage,
+  formatDeleteAccountErrorMessage,
+  formatSyncErrorMessage,
+  getAuthModeMessage,
+  isSyncSetupIssue,
+  shiftTime
+} from '../utils';
 
 const AI_REQUEST_DEDUPE_WINDOW_MS = 10_000;
 const AI_QUOTA_BACKOFF_MS = 5 * 60_000;
@@ -79,6 +93,18 @@ const taskDefaultsByEnergy: Record<EnergyLevel, { urgency: number; importance: n
   }
 };
 
+function deriveEnergyLevelFromBurnoutLevel(level: 'low' | 'moderate' | 'high'): EnergyLevel {
+  switch (level) {
+    case 'high':
+      return 'low';
+    case 'moderate':
+      return 'medium';
+    case 'low':
+    default:
+      return 'high';
+  }
+}
+
 export function usePaceframeApp(): PaceframeAppController {
   const [dashboard, setDashboard] = useState<DashboardState>(mockDashboard);
   const [activeTab, setActiveTab] = useState<PaceframeAppController['activeTab']>('overview');
@@ -92,6 +118,8 @@ export function usePaceframeApp(): PaceframeAppController {
   const [authPassword, setAuthPassword] = useState('');
   const [authStatus, setAuthStatus] = useState<PaceframeAppController['authStatus']>('idle');
   const [authMessage, setAuthMessage] = useState(getAuthModeMessage('signup'));
+  const [deleteAccountStatus, setDeleteAccountStatus] = useState<PaceframeAppController['deleteAccountStatus']>('idle');
+  const [deleteAccountMessage, setDeleteAccountMessage] = useState('');
   const [syncStatus, setSyncStatus] = useState<PaceframeAppController['syncStatus']>('idle');
   const [syncMessage, setSyncMessage] = useState('Cloud sync will activate once Supabase accepts your Firebase identity.');
   const [aiStatus, setAIStatus] = useState<PaceframeAppController['aiStatus']>('idle');
@@ -110,6 +138,7 @@ export function usePaceframeApp(): PaceframeAppController {
   const [syncAttempt, setSyncAttempt] = useState(0);
   const [aiAttempt, setAIAttempt] = useState(0);
   const [notificationPermissionAttempted, setNotificationPermissionAttempted] = useState(false);
+  const isAccountDeletionInProgressRef = useRef(false);
   const aiRefreshFingerprint = useMemo(
     () =>
       JSON.stringify({
@@ -176,12 +205,63 @@ export function usePaceframeApp(): PaceframeAppController {
       return;
     }
 
+    let cancelled = false;
+
     const unsubscribe = onAuthStateChanged(auth, (nextUser) => {
-      setUser(nextUser);
-      setIsAuthResolved(true);
+      void (async () => {
+        if (cancelled) {
+          return;
+        }
+
+        if (!nextUser) {
+          setUser(null);
+          setIsAuthResolved(true);
+          return;
+        }
+
+        try {
+          await nextUser.reload();
+          await nextUser.getIdToken(true);
+        } catch {
+          // If reload/token refresh fails, keep evaluating the live auth object.
+        }
+
+        if (cancelled) {
+          return;
+        }
+
+        if (!nextUser.emailVerified) {
+          try {
+            await requestVerificationEmail(nextUser);
+            setAuthMessage('Your email is not verified yet. Paceframe sent another verification link. Check your inbox, verify it, then sign in again.');
+          } catch {
+            setAuthMessage('Your email is not verified yet. Use the resend button to request another verification link.');
+          }
+
+          setAuthMode('signin');
+          setAuthEmail(nextUser.email ?? '');
+          setAuthPassword('');
+          setAuthStatus('error');
+          setDeleteAccountStatus('idle');
+          setDeleteAccountMessage('');
+          setUser(null);
+          setIsAuthResolved(true);
+          void signOut(auth!).catch(() => undefined);
+          return;
+        }
+
+        setDeleteAccountStatus('idle');
+        setDeleteAccountMessage('');
+        setAuthStatus('idle');
+        setUser(nextUser);
+        setIsAuthResolved(true);
+      })();
     });
 
-    return unsubscribe;
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
@@ -214,7 +294,54 @@ export function usePaceframeApp(): PaceframeAppController {
           setDashboard(remoteDashboard);
           setSyncMessage('Cloud sync connected. Your latest Paceframe dashboard was loaded.');
         } else {
-          setSyncMessage('Cloud sync connected. This device is ready to save your Paceframe state.');
+          let loadedLegacyLocalDashboard = false;
+          let localDashboard: DashboardState | null = null;
+
+          try {
+            const scopedLocalDashboard = await AsyncStorage.getItem(getDashboardStorageKey(currentUser.uid));
+
+            if (cancelled) {
+              return;
+            }
+
+            if (scopedLocalDashboard) {
+              localDashboard = mergeDashboardState(JSON.parse(scopedLocalDashboard) as Partial<DashboardState>);
+            } else {
+              const legacyLocalDashboard = await AsyncStorage.getItem(STORAGE_KEY);
+
+              if (cancelled) {
+                return;
+              }
+
+              if (legacyLocalDashboard) {
+                loadedLegacyLocalDashboard = true;
+                localDashboard = mergeDashboardState(JSON.parse(legacyLocalDashboard) as Partial<DashboardState>);
+              }
+            }
+
+            if (localDashboard) {
+              setDashboard(localDashboard);
+              setSyncMessage('Cloud sync connected. Your Paceframe dashboard was loaded from this device.');
+            } else {
+              setDashboard(mockDashboard);
+              setSyncMessage('Cloud sync connected. This device is ready to save your Paceframe state.');
+            }
+          } catch {
+            if (cancelled) {
+              return;
+            }
+
+            setDashboard(mockDashboard);
+            setSyncMessage('Cloud sync connected. This device is ready to save your Paceframe state.');
+          }
+
+          if (!cancelled && loadedLegacyLocalDashboard) {
+            await AsyncStorage.setItem(getDashboardStorageKey(currentUser.uid), JSON.stringify(localDashboard ?? mockDashboard));
+          }
+        }
+
+        if (!cancelled) {
+          await AsyncStorage.removeItem(STORAGE_KEY);
         }
 
         setSyncStatus('synced');
@@ -227,6 +354,38 @@ export function usePaceframeApp(): PaceframeAppController {
         setCloudSetupRequired(isSyncSetupIssue(error));
         setSyncStatus(isSyncSetupIssue(error) ? 'setup' : 'error');
         setSyncMessage(formatSyncErrorMessage(error));
+
+        try {
+          const scopedLocalDashboard = await AsyncStorage.getItem(getDashboardStorageKey(currentUser.uid));
+
+          if (cancelled) {
+            return;
+          }
+
+          if (scopedLocalDashboard) {
+            setDashboard(mergeDashboardState(JSON.parse(scopedLocalDashboard) as Partial<DashboardState>));
+          } else {
+            const legacyLocalDashboard = await AsyncStorage.getItem(STORAGE_KEY);
+
+            if (cancelled) {
+              return;
+            }
+
+            if (legacyLocalDashboard) {
+              setDashboard(mergeDashboardState(JSON.parse(legacyLocalDashboard) as Partial<DashboardState>));
+            } else {
+              setDashboard(mockDashboard);
+            }
+          }
+        } catch {
+          if (!cancelled) {
+            setDashboard(mockDashboard);
+          }
+        }
+
+        if (!cancelled) {
+          await AsyncStorage.removeItem(STORAGE_KEY);
+        }
       } finally {
         if (!cancelled) {
           setIsCloudHydrated(true);
@@ -242,7 +401,7 @@ export function usePaceframeApp(): PaceframeAppController {
   }, [syncAttempt, user]);
 
   useEffect(() => {
-    if (!user) {
+    if (!user || isAccountDeletionInProgressRef.current) {
       setAssistantConversationId(null);
       setNotificationPermissionAttempted(false);
       return;
@@ -285,11 +444,17 @@ export function usePaceframeApp(): PaceframeAppController {
       return;
     }
 
-    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(dashboard)).catch(() => undefined);
-  }, [dashboard, isHydrated]);
+    if (isAccountDeletionInProgressRef.current) {
+      return;
+    }
+
+    const storageKey = user ? getDashboardStorageKey(user.uid) : STORAGE_KEY;
+
+    AsyncStorage.setItem(storageKey, JSON.stringify(dashboard)).catch(() => undefined);
+  }, [dashboard, isHydrated, user]);
 
   useEffect(() => {
-    if (!user || !isHydrated || !dashboard.profile.onboardingComplete) {
+    if (!user || !isHydrated || !dashboard.profile.onboardingComplete || isAccountDeletionInProgressRef.current) {
       return;
     }
 
@@ -319,7 +484,7 @@ export function usePaceframeApp(): PaceframeAppController {
   }, [dashboard.profile.onboardingComplete, dashboard.reminders, isHydrated, notificationPermissionAttempted, user]);
 
   useEffect(() => {
-    if (!user || !isHydrated || !isCloudHydrated || cloudSetupRequired) {
+    if (!user || !isHydrated || !isCloudHydrated || cloudSetupRequired || isAccountDeletionInProgressRef.current) {
       return;
     }
 
@@ -344,7 +509,7 @@ export function usePaceframeApp(): PaceframeAppController {
   }, [cloudSetupRequired, dashboard, isCloudHydrated, isHydrated, user]);
 
   useEffect(() => {
-    if (!user) {
+    if (!user || isAccountDeletionInProgressRef.current) {
       setLiveCoaching(null);
       setAIStatus('idle');
       setAIMessage('Sign in to activate live AI coaching.');
@@ -655,6 +820,29 @@ export function usePaceframeApp(): PaceframeAppController {
     setActiveTab('overview');
   }
 
+  function completeInitialCheckIn() {
+    const burnoutLevel = getBurnoutSignal(dashboard.energyState).level;
+    const nextEnergy = deriveEnergyLevelFromBurnoutLevel(burnoutLevel);
+
+    setPlanEnergyGateOpen(false);
+    setPlanSessionEnergyLane(null);
+    setActiveTab('overview');
+    setDashboard((current) => ({
+      ...current,
+      energyState: updateEnergyState(current.energyState, {
+        energy: nextEnergy
+      }),
+      taskFlow: {
+        ...current.taskFlow,
+        selectedEnergyLane: nextEnergy,
+        needsEnergyConfirmation: false
+      },
+      profile: updateUserProfile(current.profile, {
+        initialCheckInComplete: true
+      })
+    }));
+  }
+
   function retryCloudSync() {
     setCloudSetupRequired(false);
     setSyncStatus('syncing');
@@ -695,6 +883,10 @@ export function usePaceframeApp(): PaceframeAppController {
   }
 
   function handleTabChange(tab: PaceframeAppController['activeTab']) {
+    if (dashboard.profile.onboardingComplete && !dashboard.profile.initialCheckInComplete && tab !== 'overview') {
+      return;
+    }
+
     const hasPendingTasks = dashboard.tasks.some((task) => task.status === 'pending');
 
     if (tab === 'plan') {
@@ -838,12 +1030,26 @@ export function usePaceframeApp(): PaceframeAppController {
         const credential = await signInWithEmailAndPassword(auth, authEmail.trim(), authPassword);
         await credential.user.reload();
         await credential.user.getIdToken(true);
+
+        if (!credential.user.emailVerified) {
+          try {
+            await requestVerificationEmail(credential.user);
+            setAuthMessage('Your email is not verified yet. Paceframe sent another verification link. Check your inbox, verify it, then sign in again.');
+          } catch {
+            setAuthMessage('Your email is not verified yet. Use the resend button to request another verification link.');
+          }
+
+          setAuthStatus('error');
+          setAuthMode('signin');
+          setAuthPassword('');
+          await signOut(auth).catch(() => undefined);
+          return;
+        }
+
+        setDeleteAccountStatus('idle');
+        setDeleteAccountMessage('');
         setAuthStatus('idle');
-        setAuthMessage(
-          credential.user.emailVerified
-            ? 'Signed in successfully.'
-            : 'Signed in successfully. If this is a brand-new account, verify the email from your inbox before your first full use.'
-        );
+        setAuthMessage('Signed in successfully.');
         return;
       }
 
@@ -856,6 +1062,72 @@ export function usePaceframeApp(): PaceframeAppController {
     }
   }
 
+  async function handleResendVerificationEmail() {
+    const email = authEmail.trim();
+
+    if (!email) {
+      setAuthStatus('error');
+      setAuthMessage('Enter your email address first.');
+      return;
+    }
+
+    try {
+      setAuthStatus('working');
+      await requestVerificationEmailByEmail(email);
+      setAuthStatus('sent');
+      setAuthMessage('Verification email resent. Check your inbox, verify it, then sign back in.');
+    } catch (error) {
+      setAuthStatus('error');
+      setAuthMessage(
+        error instanceof Error && error.message.trim()
+          ? error.message
+          : 'We could not resend the verification email right now. Try again in a moment.'
+      );
+    }
+  }
+
+  async function handleDeleteAccount() {
+    if (!auth?.currentUser) {
+      setDeleteAccountStatus('error');
+      setDeleteAccountMessage('Sign in first to delete your Paceframe account.');
+      return;
+    }
+
+    const currentUser = auth.currentUser;
+    isAccountDeletionInProgressRef.current = true;
+    setDeleteAccountStatus('working');
+    setDeleteAccountMessage('Removing your Paceframe account, synced cloud data, and local cache...');
+
+    try {
+      await cancelAllReminderNotificationsAsync().catch(() => undefined);
+      await AsyncStorage.removeItem(STORAGE_KEY);
+      await AsyncStorage.removeItem(getDashboardStorageKey(currentUser.uid));
+      setDashboard(mockDashboard);
+
+      await deleteRemoteUserData(currentUser);
+      await deleteUser(currentUser);
+
+      setDeleteAccountStatus('done');
+      setDeleteAccountMessage('Your Paceframe account was deleted.');
+      setAuthMode('signup');
+      setAuthEmail('');
+      setAuthPassword('');
+      setAuthStatus('idle');
+      setAuthMessage('Your Paceframe account was deleted. Create a new one if you want to return.');
+    } catch (error) {
+      const message = formatDeleteAccountErrorMessage(error);
+      setDeleteAccountStatus('error');
+      setDeleteAccountMessage(message);
+      setAuthMode('signin');
+      setAuthPassword('');
+      setAuthStatus('error');
+      setAuthMessage(message);
+    } finally {
+      await signOut(auth).catch(() => undefined);
+      isAccountDeletionInProgressRef.current = false;
+    }
+  }
+
   async function handleSignOut() {
     if (!auth) {
       return;
@@ -865,6 +1137,8 @@ export function usePaceframeApp(): PaceframeAppController {
     await signOut(auth);
     setAuthStatus('idle');
     setAuthMessage('Signed out. Sign back in whenever you are ready.');
+    setDeleteAccountStatus('idle');
+    setDeleteAccountMessage('');
   }
 
   return {
@@ -885,6 +1159,8 @@ export function usePaceframeApp(): PaceframeAppController {
     authStatus,
     authMessage,
     authReady: Boolean(hasFirebaseConfig && auth),
+    deleteAccountStatus,
+    deleteAccountMessage,
     syncStatus,
     syncMessage,
     aiStatus,
@@ -898,6 +1174,7 @@ export function usePaceframeApp(): PaceframeAppController {
     assistantHistory,
     user,
     isReady: isHydrated && isAuthResolved,
+    isCloudHydrated,
     plan,
     burnoutSignal,
     aiCoach,
@@ -909,7 +1186,9 @@ export function usePaceframeApp(): PaceframeAppController {
     nextReminders,
     handleAuthModeChange,
     handleAuthSubmit,
+    handleResendVerificationEmail,
     handleSignOut,
+    handleDeleteAccount,
     adjustEnergy,
     adjustSleepTrouble,
     handleAddTask,
@@ -924,6 +1203,7 @@ export function usePaceframeApp(): PaceframeAppController {
     setPlanningStyle,
     setCrashWindow,
     completeOnboarding,
+    completeInitialCheckIn,
     retryCloudSync,
     retryLiveCoaching,
     selectEnergyLane,

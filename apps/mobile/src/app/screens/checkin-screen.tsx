@@ -6,7 +6,10 @@ import { styles } from '../styles';
 type CheckInScreenProps = Pick<
   PaceframeAppController,
   'dashboard' | 'adjustSleepTrouble' | 'adjustEnergy' | 'adjustCareMetric' | 'toggleReminderEnabled' | 'shiftReminder' | 'updateReflectionField'
->;
+> & {
+  isFirstRunGate?: boolean;
+  completeInitialCheckIn?: () => void;
+};
 
 export function CheckInScreen({
   dashboard,
@@ -15,15 +18,21 @@ export function CheckInScreen({
   adjustCareMetric,
   toggleReminderEnabled,
   shiftReminder,
-  updateReflectionField
+  updateReflectionField,
+  isFirstRunGate = false,
+  completeInitialCheckIn
 }: CheckInScreenProps) {
   const strainAverage = Math.round(((11 - dashboard.checkIn.sleepQuality) + dashboard.checkIn.stressLevel + dashboard.checkIn.screenFatigue) / 3);
+  const introTitle = isFirstRunGate ? 'Start with a live check-in' : 'Check in with yourself';
+  const introSubtitle = isFirstRunGate
+    ? 'This one-time check-in sets today’s energy before Paceframe opens the rest of the app.'
+    : 'Update your current strain level, care basics, reminders, and reflection so Paceframe reacts to your real state.';
 
   return (
     <View>
       <PageIntro
-        title="Check in with yourself"
-        subtitle="Update your current strain level, care basics, reminders, and reflection so Paceframe reacts to your real state."
+        title={introTitle}
+        subtitle={introSubtitle}
       />
 
       <Card title="State deck" subtitle="A quicker visual read on how the system sees your current load before you edit the details." tone="navy">
@@ -104,6 +113,17 @@ export function CheckInScreen({
           onChangeText={(value) => updateReflectionField('gratitude', value)}
         />
       </Card>
+
+      {isFirstRunGate && completeInitialCheckIn ? (
+        <Card title="Ready to continue?" subtitle="Choose your current energy once and Paceframe will open Today with that pace already set." tone="navy">
+          <Text style={styles.inverseBody}>
+            This first-run check-in is the last step before you enter the app. You can still return to Signals later and adjust these inputs anytime.
+          </Text>
+          <Pressable onPress={completeInitialCheckIn} style={styles.primaryButton}>
+            <Text style={styles.primaryButtonLabel}>Continue to Today</Text>
+          </Pressable>
+        </Card>
+      ) : null}
     </View>
   );
 }

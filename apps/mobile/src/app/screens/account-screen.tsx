@@ -1,4 +1,4 @@
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, Text, TextInput, View } from 'react-native';
 import { PaceframeLogo } from '../../components/paceframe-logo';
 import { CareTracker, Card, PageIntro } from '../components/primitives';
 import { crashWindows, planningStyles } from '../constants';
@@ -18,6 +18,9 @@ type AccountScreenProps = Pick<
   | 'setPlanningStyle'
   | 'setCrashWindow'
   | 'adjustCareTarget'
+  | 'deleteAccountStatus'
+  | 'deleteAccountMessage'
+  | 'handleDeleteAccount'
 >;
 
 function labelize(value: string) {
@@ -35,7 +38,10 @@ export function AccountScreen({
   updateProfileField,
   setPlanningStyle,
   setCrashWindow,
-  adjustCareTarget
+  adjustCareTarget,
+  deleteAccountStatus,
+  deleteAccountMessage,
+  handleDeleteAccount
 }: AccountScreenProps) {
   const enabledReminders = nextReminders.length;
   const syncTone = syncStatus === 'setup' ? 'warm' : syncStatus === 'error' ? 'navy' : 'teal';
@@ -70,6 +76,47 @@ export function AccountScreen({
             <Text style={styles.accountButtonLabel}>Sign out</Text>
           </Pressable>
         </View>
+      </Card>
+
+      <Card
+        title="Delete account"
+        subtitle="Permanently remove this Firebase account, the synced cloud data behind it, and the local device cache."
+        tone="warm"
+      >
+        <Text style={styles.deleteAccountBody}>
+          This is permanent. Paceframe will cancel reminders, remove your synced dashboard and AI memory, then sign you out.
+        </Text>
+
+        <Pressable
+          onPress={() =>
+            Alert.alert(
+              'Delete your Paceframe account?',
+              'This will permanently remove your account, synced cloud data, and local device state. You can create a new account later if you want to return.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Delete',
+                  style: 'destructive',
+                  onPress: () => {
+                    void handleDeleteAccount();
+                  }
+                }
+              ]
+            )
+          }
+          disabled={deleteAccountStatus === 'working'}
+          style={[styles.deleteAccountButton, deleteAccountStatus === 'working' ? styles.disabledButton : undefined]}
+        >
+          <Text style={styles.deleteAccountButtonLabel}>
+            {deleteAccountStatus === 'working' ? 'Deleting...' : 'Delete account'}
+          </Text>
+        </Pressable>
+
+        {deleteAccountMessage ? (
+          <View style={styles.deleteAccountNotice}>
+            <Text style={styles.deleteAccountNoticeText}>{deleteAccountMessage}</Text>
+          </View>
+        ) : null}
       </Card>
 
       <Card title="Cloud sync" subtitle={`Status: ${syncLabel}`} tone={syncTone}>

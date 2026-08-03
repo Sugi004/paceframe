@@ -498,6 +498,34 @@ export const styles = StyleSheet.create({
     color: '#0f1730',
     fontWeight: '900'
   },
+  deleteAccountBody: {
+    color: '#5a3540',
+    lineHeight: 22,
+    marginBottom: 14
+  },
+  deleteAccountButton: {
+    borderRadius: 999,
+    backgroundColor: '#d84c4c',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    alignSelf: 'flex-start'
+  },
+  deleteAccountButtonLabel: {
+    color: '#ffffff',
+    fontWeight: '900'
+  },
+  deleteAccountNotice: {
+    marginTop: 12,
+    borderRadius: 16,
+    backgroundColor: '#ffe3e3',
+    padding: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(184,67,67,0.18)'
+  },
+  deleteAccountNoticeText: {
+    color: '#8a2434',
+    lineHeight: 21
+  },
   disabledButton: {
     opacity: 0.45
   },

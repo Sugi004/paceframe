@@ -7,7 +7,8 @@ export const mockDashboard: DashboardState = {
     primaryGoal: 'protect energy while still shipping meaningful work',
     planningStyle: 'protective',
     crashWindow: 'afternoon',
-    onboardingComplete: true
+    onboardingComplete: true,
+    initialCheckInComplete: false
   },
   energyState: {
     focusLabel: 'Guard your bandwidth',

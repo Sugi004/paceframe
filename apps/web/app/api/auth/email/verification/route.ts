@@ -1,8 +1,19 @@
+import { sendPaceframeVerificationEmail } from '../../../../../src/lib/email-delivery';
+
 export async function POST(request: Request) {
-  return Response.json(
-    {
-      message: 'Paceframe now sends verification emails directly through Firebase Authentication. This legacy endpoint is no longer used.'
-    },
-    { status: 410 }
-  );
+  try {
+    const body = (await request.json().catch(() => null)) as { email?: unknown } | null;
+    const email = typeof body?.email === 'string' ? body.email.trim() : '';
+
+    if (!email) {
+      return Response.json({ error: 'An email address is required.' }, { status: 400 });
+    }
+
+    await sendPaceframeVerificationEmail(email);
+
+    return Response.json({ ok: true, message: 'Verification email sent.' });
+  } catch (error) {
+    const message = error instanceof Error && error.message ? error.message : 'Unable to send verification email.';
+    return Response.json({ error: message }, { status: 500 });
+  }
 }
