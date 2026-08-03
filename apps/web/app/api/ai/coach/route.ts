@@ -16,6 +16,7 @@ import {
   getGroqModel,
   normalizeAIError
 } from '../../../../src/lib/gemini';
+import { logRouteOutcome } from '../../../../src/lib/request-log';
 
 const requestSchema = z.object({
   dashboard: z.unknown(),
@@ -83,6 +84,7 @@ function buildCoachingPrompt(dashboard: DashboardState, userEmail?: string | nul
 }
 
 export async function POST(request: Request) {
+  const startedAt = Date.now();
   try {
     const body = requestSchema.parse(await request.json());
     const dashboard = mergeDashboardState(body.dashboard as Partial<DashboardState>);
@@ -98,15 +100,37 @@ export async function POST(request: Request) {
       schemaName: 'paceframe_coach_bundle'
     });
 
-    return Response.json({
+    const payload = {
       data: {
         ...response.data,
         generatedAt: new Date().toISOString(),
         model: `${response.provider}:${response.model}`
       }
+    };
+    const jsonResponse = Response.json(payload);
+    logRouteOutcome({
+      route: '/api/ai/coach',
+      method: 'POST',
+      status: jsonResponse.status,
+      durationMs: Date.now() - startedAt,
+      meta: {
+        provider: response.provider,
+        model: response.model
+      }
     });
+    return jsonResponse;
   } catch (error) {
     const normalized = normalizeAIError(error);
-    return Response.json({ error: normalized.message }, { status: normalized.status });
+    const jsonResponse = Response.json({ error: normalized.message }, { status: normalized.status });
+    logRouteOutcome({
+      route: '/api/ai/coach',
+      method: 'POST',
+      status: jsonResponse.status,
+      durationMs: Date.now() - startedAt,
+      meta: {
+        error: normalized.message
+      }
+    });
+    return jsonResponse;
   }
 }

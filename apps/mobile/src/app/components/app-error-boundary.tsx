@@ -21,7 +21,9 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
     };
   }
 
-  componentDidCatch(_error: Error, _errorInfo: ErrorInfo) {}
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('[paceframe-mobile-error-boundary]', error, errorInfo);
+  }
 
   handleRetry = () => {
     this.setState({
