@@ -2,9 +2,10 @@
   "expo": {
     "extra": {
       "eas": {
-        "projectId": "262844fd-7ab8-482c-ac9a-9a7644f564cc"
+        "projectId": "adadf1fb-114b-40db-ad91-7516a8448079"
       }
     },
-    "owner": "sugishivam"
+    "owner": "sugis-team",
+    "slug": "sugi"
   }
 }
