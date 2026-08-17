@@ -1,6 +1,7 @@
-import { Alert, Pressable, Text, TextInput, View } from 'react-native';
+import { Alert, Linking, Pressable, Text, TextInput, View } from 'react-native';
 import { PaceframeLogo } from '../../components/paceframe-logo';
 import { CareTracker, Card, PageIntro } from '../components/primitives';
+import { formatWakeTime, WakeTimePicker } from '../components/wake-time-picker';
 import { crashWindows, planningStyles } from '../constants';
 import { styles } from '../styles';
 import type { PaceframeAppController } from '../types';
@@ -14,7 +15,10 @@ type AccountScreenProps = Pick<
   | 'syncStatus'
   | 'syncMessage'
   | 'retryCloudSync'
+  | 'morningReminder'
+  | 'retryMorningReminder'
   | 'updateProfileField'
+  | 'setWakeTime'
   | 'setPlanningStyle'
   | 'setCrashWindow'
   | 'adjustCareTarget'
@@ -27,6 +31,16 @@ function labelize(value: string) {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
+function formatNextTrigger(value: string | null) {
+  return value
+    ? new Date(value).toLocaleString([], {
+        weekday: 'short',
+        hour: 'numeric',
+        minute: '2-digit'
+      })
+    : null;
+}
+
 export function AccountScreen({
   user,
   handleSignOut,
@@ -35,7 +49,10 @@ export function AccountScreen({
   syncStatus,
   syncMessage,
   retryCloudSync,
+  morningReminder,
+  retryMorningReminder,
   updateProfileField,
+  setWakeTime,
   setPlanningStyle,
   setCrashWindow,
   adjustCareTarget,
@@ -45,6 +62,15 @@ export function AccountScreen({
 }: AccountScreenProps) {
   const enabledReminders = nextReminders.length;
   const syncTone = syncStatus === 'setup' ? 'warm' : syncStatus === 'error' ? 'navy' : 'teal';
+  const morningTone =
+    morningReminder.status === 'scheduled'
+      ? 'teal'
+      : morningReminder.status === 'permission-needed'
+        ? 'warm'
+        : morningReminder.status === 'disabled' || morningReminder.status === 'error'
+          ? 'navy'
+          : 'light';
+  const nextMorningTrigger = formatNextTrigger(morningReminder.nextTriggerAt);
   const syncLabel =
     syncStatus === 'setup'
       ? 'Setup needed'
@@ -160,6 +186,35 @@ export function AccountScreen({
         ) : null}
       </Card>
 
+      <Card title="Morning reminder" subtitle={`Daily at ${formatWakeTime(dashboard.profile.wakeTime)}`} tone={morningTone}>
+        <Text style={morningTone === 'navy' ? styles.inverseBody : styles.lightBody}>{morningReminder.message}</Text>
+        {nextMorningTrigger ? <Text style={morningTone === 'navy' ? styles.inverseBody : styles.helperBody}>{`Next prompt: ${nextMorningTrigger}`}</Text> : null}
+
+        {morningReminder.status === 'permission-needed' ? (
+          <View style={styles.buttonRow}>
+            <Pressable onPress={retryMorningReminder} style={styles.secondaryButton}>
+              <Text style={styles.secondaryButtonLabel}>Enable notifications</Text>
+            </Pressable>
+          </View>
+        ) : null}
+
+        {morningReminder.status === 'disabled' ? (
+          <View style={styles.buttonRow}>
+            <Pressable onPress={() => void Linking.openSettings()} style={styles.secondaryButton}>
+              <Text style={styles.secondaryButtonLabel}>Open notification settings</Text>
+            </Pressable>
+          </View>
+        ) : null}
+
+        {morningReminder.status === 'error' ? (
+          <View style={styles.buttonRow}>
+            <Pressable onPress={retryMorningReminder} style={styles.secondaryButton}>
+              <Text style={styles.secondaryButtonLabel}>Retry morning reminder</Text>
+            </Pressable>
+          </View>
+        ) : null}
+      </Card>
+
       <Card title="Pacing preferences" subtitle="These choices tell Paceframe how protective or aggressive the system should feel when it shapes your day." tone="warm">
         <Text style={styles.fieldLabel}>First name</Text>
         <TextInput
@@ -188,6 +243,8 @@ export function AccountScreen({
           multiline
           style={styles.textArea}
         />
+
+        <WakeTimePicker value={dashboard.profile.wakeTime} onChange={setWakeTime} />
 
         <Text style={styles.fieldLabel}>Planning style</Text>
         <View style={styles.segmentRow}>

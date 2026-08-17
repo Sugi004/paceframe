@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Notifications from 'expo-notifications';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   createUserWithEmailAndPassword,
@@ -16,6 +17,7 @@ import {
   calculateCareConsistency,
   completeTask,
   createTask,
+  DEFAULT_WAKE_TIME,
   getFocusLabelForPlanningStyle,
   getBurnoutSignal,
   getCompletedTasks,
@@ -49,8 +51,10 @@ import {
 } from '../services/ai-coaching';
 import { deleteRemoteUserData, ensureRemoteUser, loadRemoteDashboard, saveRemoteDashboard } from '../services/dashboard-sync';
 import {
-  cancelAllReminderNotificationsAsync,
+  cancelAllPaceframeNotificationsAsync,
   configureNotificationHandler,
+  isMorningNotificationResponse,
+  syncMorningNotificationAsync,
   syncReminderNotificationsAsync
 } from '../services/notifications';
 import {
@@ -108,6 +112,7 @@ function deriveEnergyLevelFromBurnoutLevel(level: 'low' | 'moderate' | 'high'): 
 export function usePaceframeApp(): PaceframeAppController {
   const [dashboard, setDashboard] = useState<DashboardState>(mockDashboard);
   const [activeTab, setActiveTab] = useState<PaceframeAppController['activeTab']>('overview');
+  const [isMorningPlanFlowActive, setIsMorningPlanFlowActive] = useState(false);
   const [planEnergyGateOpen, setPlanEnergyGateOpen] = useState(false);
   const [planSessionEnergyLane, setPlanSessionEnergyLane] = useState<EnergyLevel | null>(null);
   const [newTaskTitle, setNewTaskTitle] = useState('');
@@ -138,7 +143,15 @@ export function usePaceframeApp(): PaceframeAppController {
   const [syncAttempt, setSyncAttempt] = useState(0);
   const [aiAttempt, setAIAttempt] = useState(0);
   const [notificationPermissionAttempted, setNotificationPermissionAttempted] = useState(false);
+  const [notificationSyncAttempt, setNotificationSyncAttempt] = useState(0);
+  const [morningNotificationResponseVersion, setMorningNotificationResponseVersion] = useState(0);
+  const [morningReminder, setMorningReminder] = useState<PaceframeAppController['morningReminder']>({
+    status: 'idle',
+    message: 'Your morning reminder will be ready once you finish setup.',
+    nextTriggerAt: null
+  });
   const isAccountDeletionInProgressRef = useRef(false);
+  const pendingMorningNotificationResponseRef = useRef<Notifications.NotificationResponse | null>(null);
   const aiRefreshFingerprint = useMemo(
     () =>
       JSON.stringify({
@@ -180,6 +193,28 @@ export function usePaceframeApp(): PaceframeAppController {
 
   useEffect(() => {
     configureNotificationHandler();
+
+    function captureMorningResponse(response: Notifications.NotificationResponse) {
+      if (isMorningNotificationResponse(response)) {
+        pendingMorningNotificationResponseRef.current = response;
+        setMorningNotificationResponseVersion((current) => current + 1);
+      }
+    }
+
+    try {
+      const lastResponse = Notifications.getLastNotificationResponse();
+      if (lastResponse) {
+        captureMorningResponse(lastResponse);
+      }
+    } catch {
+      // Notification response APIs are unavailable in unsupported runtime environments.
+    }
+
+    const subscription = Notifications.addNotificationResponseReceivedListener(captureMorningResponse);
+
+    return () => {
+      subscription.remove();
+    };
   }, []);
 
   useEffect(() => {
@@ -189,7 +224,7 @@ export function usePaceframeApp(): PaceframeAppController {
 
     const hasPendingTasks = dashboard.tasks.some((task) => task.status === 'pending');
 
-    if (!hasPendingTasks) {
+    if (!hasPendingTasks && !isMorningPlanFlowActive) {
       setPlanEnergyGateOpen(false);
       setPlanSessionEnergyLane(null);
       return;
@@ -197,7 +232,31 @@ export function usePaceframeApp(): PaceframeAppController {
 
     setPlanSessionEnergyLane(null);
     setPlanEnergyGateOpen(true);
-  }, [activeTab]);
+  }, [activeTab, isMorningPlanFlowActive]);
+
+  useEffect(() => {
+    if (
+      !pendingMorningNotificationResponseRef.current ||
+      !user ||
+      !isHydrated ||
+      !isCloudHydrated ||
+      !dashboard.profile.onboardingComplete
+    ) {
+      return;
+    }
+
+    pendingMorningNotificationResponseRef.current = null;
+    setPlanSessionEnergyLane(null);
+    setPlanEnergyGateOpen(true);
+    setIsMorningPlanFlowActive(true);
+    setActiveTab('plan');
+
+    try {
+      Notifications.clearLastNotificationResponse();
+    } catch {
+      // The route was already applied, so clearing an unsupported response store is non-blocking.
+    }
+  }, [dashboard.profile.onboardingComplete, isCloudHydrated, isHydrated, morningNotificationResponseVersion, user]);
 
   useEffect(() => {
     if (!auth) {
@@ -214,6 +273,7 @@ export function usePaceframeApp(): PaceframeAppController {
         }
 
         if (!nextUser) {
+          setIsMorningPlanFlowActive(false);
           setUser(null);
           setIsAuthResolved(true);
           return;
@@ -455,6 +515,13 @@ export function usePaceframeApp(): PaceframeAppController {
 
   useEffect(() => {
     if (!user || !isHydrated || !dashboard.profile.onboardingComplete || isAccountDeletionInProgressRef.current) {
+      if (!user) {
+        setMorningReminder({
+          status: 'idle',
+          message: 'Sign in to schedule your daily morning planning prompt.',
+          nextTriggerAt: null
+        });
+      }
       return;
     }
 
@@ -466,12 +533,46 @@ export function usePaceframeApp(): PaceframeAppController {
           requestPermissions: !notificationPermissionAttempted
         });
 
+        const morningSync = await syncMorningNotificationAsync(dashboard.profile.wakeTime, {
+          requestPermissions: false
+        });
+
         if (!cancelled) {
           setNotificationPermissionAttempted(true);
+          if (!morningSync.permission.granted) {
+            setMorningReminder({
+              status: morningSync.permission.canAskAgain ? 'permission-needed' : 'disabled',
+              message: morningSync.permission.canAskAgain
+                ? 'Enable notifications to receive your morning planning prompt.'
+                : 'Morning notifications are off. Enable Paceframe notifications in your device settings to restore them.',
+              nextTriggerAt: null
+            });
+            return;
+          }
+
+          if (!morningSync.scheduled) {
+            setMorningReminder({
+              status: 'error',
+              message: 'Paceframe could not schedule your morning reminder. Try again from Account.',
+              nextTriggerAt: null
+            });
+            return;
+          }
+
+          setMorningReminder({
+            status: 'scheduled',
+            message: 'Your daily energy-planning prompt is scheduled on this device.',
+            nextTriggerAt: morningSync.scheduled.nextTriggerAt
+          });
         }
       } catch {
         if (!cancelled) {
           setNotificationPermissionAttempted(true);
+          setMorningReminder({
+            status: 'error',
+            message: 'Paceframe could not schedule your morning reminder. Try again from Account.',
+            nextTriggerAt: null
+          });
         }
       }
     }
@@ -481,7 +582,15 @@ export function usePaceframeApp(): PaceframeAppController {
     return () => {
       cancelled = true;
     };
-  }, [dashboard.profile.onboardingComplete, dashboard.reminders, isHydrated, notificationPermissionAttempted, user]);
+  }, [
+    dashboard.profile.onboardingComplete,
+    dashboard.profile.wakeTime,
+    dashboard.reminders,
+    isHydrated,
+    notificationPermissionAttempted,
+    notificationSyncAttempt,
+    user
+  ]);
 
   useEffect(() => {
     if (!user || !isHydrated || !isCloudHydrated || cloudSetupRequired || isAccountDeletionInProgressRef.current) {
@@ -787,6 +896,15 @@ export function usePaceframeApp(): PaceframeAppController {
     }));
   }
 
+  function setWakeTime(wakeTime: string) {
+    setDashboard((current) => ({
+      ...current,
+      profile: updateUserProfile(current.profile, {
+        wakeTime: wakeTime || DEFAULT_WAKE_TIME
+      })
+    }));
+  }
+
   function setPlanningStyle(style: PlanningStyle) {
     setDashboard((current) => ({
       ...current,
@@ -826,6 +944,7 @@ export function usePaceframeApp(): PaceframeAppController {
 
     setPlanEnergyGateOpen(false);
     setPlanSessionEnergyLane(null);
+    setIsMorningPlanFlowActive(false);
     setActiveTab('overview');
     setDashboard((current) => ({
       ...current,
@@ -848,6 +967,16 @@ export function usePaceframeApp(): PaceframeAppController {
     setSyncStatus('syncing');
     setSyncMessage('Retrying Supabase sync...');
     setSyncAttempt((current) => current + 1);
+  }
+
+  function retryMorningReminder() {
+    setNotificationPermissionAttempted(false);
+    setMorningReminder({
+      status: 'idle',
+      message: 'Checking notification permission and scheduling your morning prompt...',
+      nextTriggerAt: null
+    });
+    setNotificationSyncAttempt((current) => current + 1);
   }
 
   function retryLiveCoaching() {
@@ -883,7 +1012,7 @@ export function usePaceframeApp(): PaceframeAppController {
   }
 
   function handleTabChange(tab: PaceframeAppController['activeTab']) {
-    if (dashboard.profile.onboardingComplete && !dashboard.profile.initialCheckInComplete && tab !== 'overview') {
+    if (dashboard.profile.onboardingComplete && !dashboard.profile.initialCheckInComplete && !isMorningPlanFlowActive && tab !== 'overview') {
       return;
     }
 
@@ -895,6 +1024,7 @@ export function usePaceframeApp(): PaceframeAppController {
     } else {
       setPlanEnergyGateOpen(false);
       setPlanSessionEnergyLane(null);
+      setIsMorningPlanFlowActive(false);
     }
 
     setActiveTab(tab);
@@ -1099,7 +1229,7 @@ export function usePaceframeApp(): PaceframeAppController {
     setDeleteAccountMessage('Removing your Paceframe account, synced cloud data, and local cache...');
 
     try {
-      await cancelAllReminderNotificationsAsync().catch(() => undefined);
+      await cancelAllPaceframeNotificationsAsync().catch(() => undefined);
       await AsyncStorage.removeItem(STORAGE_KEY);
       await AsyncStorage.removeItem(getDashboardStorageKey(currentUser.uid));
       setDashboard(mockDashboard);
@@ -1133,8 +1263,9 @@ export function usePaceframeApp(): PaceframeAppController {
       return;
     }
 
-    await cancelAllReminderNotificationsAsync().catch(() => undefined);
+    await cancelAllPaceframeNotificationsAsync().catch(() => undefined);
     await signOut(auth);
+    setIsMorningPlanFlowActive(false);
     setAuthStatus('idle');
     setAuthMessage('Signed out. Sign back in whenever you are ready.');
     setDeleteAccountStatus('idle');
@@ -1145,6 +1276,7 @@ export function usePaceframeApp(): PaceframeAppController {
     dashboard,
     activeTab,
     setActiveTab: handleTabChange,
+    isMorningPlanFlowActive,
     planEnergyGateOpen,
     currentPlanEnergyLane: planSessionEnergyLane,
     newTaskTitle,
@@ -1172,6 +1304,7 @@ export function usePaceframeApp(): PaceframeAppController {
     setAssistantPrompt,
     assistantReply,
     assistantHistory,
+    morningReminder,
     user,
     isReady: isHydrated && isAuthResolved,
     isCloudHydrated,
@@ -1200,11 +1333,13 @@ export function usePaceframeApp(): PaceframeAppController {
     shiftReminder: shiftReminderByStep,
     updateReflectionField,
     updateProfileField,
+    setWakeTime,
     setPlanningStyle,
     setCrashWindow,
     completeOnboarding,
     completeInitialCheckIn,
     retryCloudSync,
+    retryMorningReminder,
     retryLiveCoaching,
     selectEnergyLane,
     setWorkOrderingPreference,

@@ -1,10 +1,11 @@
-import type { DashboardState } from './domain';
+import { DEFAULT_WAKE_TIME, type DashboardState } from './domain';
 
 export const mockDashboard: DashboardState = {
   profile: {
     firstName: 'Sugi',
     roleLabel: 'Founder',
     primaryGoal: 'protect energy while still shipping meaningful work',
+    wakeTime: DEFAULT_WAKE_TIME,
     planningStyle: 'protective',
     crashWindow: 'afternoon',
     onboardingComplete: true,

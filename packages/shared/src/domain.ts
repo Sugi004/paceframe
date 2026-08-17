@@ -6,6 +6,8 @@ export type PlanningStyle = 'steady' | 'protective' | 'ambitious';
 export type CrashWindow = 'morning' | 'afternoon' | 'evening';
 export type WorkOrderingPreference = 'paceframe' | EnergyLevel;
 
+export const DEFAULT_WAKE_TIME = '08:00';
+
 export interface EnergyState {
   focusLabel: string;
   energy: EnergyLevel;
@@ -88,6 +90,7 @@ export interface UserProfile {
   firstName: string;
   roleLabel: string;
   primaryGoal: string;
+  wakeTime: string;
   planningStyle: PlanningStyle;
   crashWindow: CrashWindow;
   onboardingComplete: boolean;

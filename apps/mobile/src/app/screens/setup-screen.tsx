@@ -1,12 +1,13 @@
 import { Pressable, Text, TextInput, View } from 'react-native';
 import { CareTracker, Card, PageIntro } from '../components/primitives';
+import { WakeTimePicker } from '../components/wake-time-picker';
 import { crashWindows, planningStyles } from '../constants';
 import { styles } from '../styles';
 import type { PaceframeAppController } from '../types';
 
 type SetupScreenProps = Pick<
   PaceframeAppController,
-  'dashboard' | 'updateProfileField' | 'setPlanningStyle' | 'setCrashWindow' | 'adjustCareTarget' | 'completeOnboarding'
+  'dashboard' | 'updateProfileField' | 'setWakeTime' | 'setPlanningStyle' | 'setCrashWindow' | 'adjustCareTarget' | 'completeOnboarding'
 >;
 
 function labelize(value: string) {
@@ -16,6 +17,7 @@ function labelize(value: string) {
 export function SetupScreen({
   dashboard,
   updateProfileField,
+  setWakeTime,
   setPlanningStyle,
   setCrashWindow,
   adjustCareTarget,
@@ -58,6 +60,8 @@ export function SetupScreen({
           multiline
           style={styles.textArea}
         />
+
+        <WakeTimePicker value={dashboard.profile.wakeTime} onChange={setWakeTime} />
       </Card>
 
       <Card title="How should planning feel?" subtitle="Choose the pace logic that should shape how tasks are ranked and how recovery gets protected." tone="warm">

@@ -22,6 +22,13 @@ export type AuthStatus = 'idle' | 'working' | 'sent' | 'error';
 export type DeleteAccountStatus = 'idle' | 'working' | 'done' | 'error';
 export type SyncStatus = 'idle' | 'syncing' | 'synced' | 'error' | 'setup';
 export type AIStatus = 'idle' | 'loading' | 'ready' | 'error';
+export type MorningReminderStatus = 'idle' | 'scheduled' | 'permission-needed' | 'disabled' | 'error';
+
+export interface MorningReminderState {
+  status: MorningReminderStatus;
+  message: string;
+  nextTriggerAt: string | null;
+}
 
 export interface AssistantThreadItem {
   id: string;
@@ -34,6 +41,7 @@ export interface PaceframeAppController {
   dashboard: DashboardState;
   activeTab: Tab;
   setActiveTab: (tab: Tab) => void;
+  isMorningPlanFlowActive: boolean;
   planEnergyGateOpen: boolean;
   currentPlanEnergyLane: EnergyLevel | null;
   newTaskTitle: string;
@@ -61,6 +69,7 @@ export interface PaceframeAppController {
   setAssistantPrompt: (value: string) => void;
   assistantReply: LiveAssistantReply | null;
   assistantHistory: AssistantThreadItem[];
+  morningReminder: MorningReminderState;
   user: User | null;
   isReady: boolean;
   isCloudHydrated: boolean;
@@ -89,10 +98,12 @@ export interface PaceframeAppController {
   shiftReminder: (reminderId: string, direction: -1 | 1) => void;
   updateReflectionField: (field: 'intention' | 'eveningNote' | 'gratitude', value: string) => void;
   updateProfileField: (field: 'firstName' | 'roleLabel' | 'primaryGoal', value: string) => void;
+  setWakeTime: (wakeTime: string) => void;
   setPlanningStyle: (style: PlanningStyle) => void;
   setCrashWindow: (window: CrashWindow) => void;
   completeOnboarding: () => void;
   retryCloudSync: () => void;
+  retryMorningReminder: () => void;
   retryLiveCoaching: () => void;
   selectEnergyLane: (level: EnergyLevel) => void;
   setWorkOrderingPreference: (preference: WorkOrderingPreference) => void;

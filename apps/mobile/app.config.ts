@@ -63,7 +63,7 @@ const config: ExpoConfig = {
   },
   android: {
     package: envValue('EXPO_PUBLIC_ANDROID_PACKAGE_NAME') || 'com.paceframe.app',
-    permissions: ['RECEIVE_BOOT_COMPLETED', 'VIBRATE'],
+    permissions: ['RECEIVE_BOOT_COMPLETED', 'VIBRATE', 'SCHEDULE_EXACT_ALARM'],
     adaptiveIcon: {
       foregroundImage: './assets/adaptive-icon-foreground.png',
       backgroundImage: './assets/adaptive-icon-background.png',

@@ -1,10 +1,11 @@
 import Constants from 'expo-constants';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
-import type { ReminderItem, ReminderKind } from '@paceframe/shared';
+import { DEFAULT_WAKE_TIME, type ReminderItem, type ReminderKind } from '@paceframe/shared';
 
 const DEFAULT_CHANNEL_ID = 'paceframe-reminders';
-const NOTIFICATION_SCOPE = 'paceframe.reminder';
+const REMINDER_NOTIFICATION_SCOPE = 'paceframe.reminder';
+const MORNING_NOTIFICATION_SCOPE = 'paceframe.morning';
 
 type ReminderTriggerParts = {
   hour: number;
@@ -12,10 +13,16 @@ type ReminderTriggerParts = {
 };
 
 type PaceframeReminderPayload = {
-  scope: typeof NOTIFICATION_SCOPE;
+  scope: typeof REMINDER_NOTIFICATION_SCOPE;
   reminderId: string;
   reminderKind: ReminderKind;
   reminderTime: string;
+};
+
+type PaceframeMorningPayload = {
+  scope: typeof MORNING_NOTIFICATION_SCOPE;
+  destination: 'plan';
+  wakeTime: string;
 };
 
 export type NotificationPermissionSnapshot = {
@@ -35,6 +42,18 @@ export type ReminderSyncSummary = {
   scheduled: ReminderScheduleResult[];
   cancelledReminderIds: string[];
   skippedReminderIds: string[];
+};
+
+export type MorningScheduleResult = {
+  wakeTime: string;
+  notificationId: string;
+  nextTriggerAt: string | null;
+};
+
+export type MorningSyncSummary = {
+  permission: NotificationPermissionSnapshot;
+  scheduled: MorningScheduleResult | null;
+  cancelled: boolean;
 };
 
 const extra = (Constants.expoConfig?.extra ?? {}) as {
@@ -70,6 +89,10 @@ function parseReminderTime(time: string): ReminderTriggerParts | null {
   return { hour, minute };
 }
 
+function getEffectiveWakeTime(wakeTime: string | null | undefined) {
+  return wakeTime && parseReminderTime(wakeTime) ? wakeTime : DEFAULT_WAKE_TIME;
+}
+
 function buildReminderTrigger(time: string): Notifications.DailyTriggerInput | null {
   const parts = parseReminderTime(time);
   if (!parts) {
@@ -98,7 +121,16 @@ function isReminderPayload(value: unknown): value is PaceframeReminderPayload {
   }
 
   const payload = value as Partial<PaceframeReminderPayload>;
-  return payload.scope === NOTIFICATION_SCOPE && typeof payload.reminderId === 'string';
+  return payload.scope === REMINDER_NOTIFICATION_SCOPE && typeof payload.reminderId === 'string';
+}
+
+function isMorningPayload(value: unknown): value is PaceframeMorningPayload {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const payload = value as Partial<PaceframeMorningPayload>;
+  return payload.scope === MORNING_NOTIFICATION_SCOPE && payload.destination === 'plan' && typeof payload.wakeTime === 'string';
 }
 
 function getReminderPayload(request: Notifications.NotificationRequest): PaceframeReminderPayload | null {
@@ -121,6 +153,13 @@ export function configureNotificationHandler() {
   });
 
   notificationHandlerConfigured = true;
+}
+
+export function isMorningNotificationResponse(response: Notifications.NotificationResponse) {
+  return (
+    response.actionIdentifier === Notifications.DEFAULT_ACTION_IDENTIFIER &&
+    isMorningPayload(response.notification.request.content.data)
+  );
 }
 
 export async function ensureReminderChannelAsync() {
@@ -180,6 +219,11 @@ export async function getScheduledReminderRequestsAsync() {
   return allRequests.filter((request) => Boolean(getReminderPayload(request)));
 }
 
+export async function getScheduledMorningRequestsAsync() {
+  const allRequests = await Notifications.getAllScheduledNotificationsAsync();
+  return allRequests.filter((request) => isMorningPayload(request.content.data));
+}
+
 export async function cancelReminderNotificationAsync(reminderId: string) {
   const requests = await getScheduledReminderRequestsAsync();
   const matchingRequests = requests.filter((request) => getReminderPayload(request)?.reminderId === reminderId);
@@ -228,7 +272,7 @@ export async function scheduleReminderNotificationAsync(reminder: ReminderItem):
       body: buildReminderBody(reminder),
       sound: false,
       data: {
-        scope: NOTIFICATION_SCOPE,
+        scope: REMINDER_NOTIFICATION_SCOPE,
         reminderId: reminder.id,
         reminderKind: reminder.kind,
         reminderTime: reminder.time
@@ -295,4 +339,78 @@ export async function syncReminderNotificationsAsync(
 export async function cancelAllReminderNotificationsAsync() {
   const requests = await getScheduledReminderRequestsAsync();
   await Promise.all(requests.map((request) => Notifications.cancelScheduledNotificationAsync(request.identifier)));
+}
+
+export async function cancelMorningNotificationAsync() {
+  const requests = await getScheduledMorningRequestsAsync();
+  await Promise.all(requests.map((request) => Notifications.cancelScheduledNotificationAsync(request.identifier)));
+  return requests.length > 0;
+}
+
+export async function cancelAllPaceframeNotificationsAsync() {
+  await Promise.all([cancelAllReminderNotificationsAsync(), cancelMorningNotificationAsync()]);
+}
+
+export async function scheduleMorningNotificationAsync(
+  wakeTime: string | null | undefined
+): Promise<MorningScheduleResult | null> {
+  const effectiveWakeTime = getEffectiveWakeTime(wakeTime);
+  const trigger = buildReminderTrigger(effectiveWakeTime);
+
+  if (!trigger) {
+    return null;
+  }
+
+  configureNotificationHandler();
+  await ensureReminderChannelAsync();
+  await cancelMorningNotificationAsync();
+
+  const notificationId = await Notifications.scheduleNotificationAsync({
+    content: {
+      title: 'Good morning',
+      body: 'Time to schedule your day based on your energy.',
+      sound: false,
+      data: {
+        scope: MORNING_NOTIFICATION_SCOPE,
+        destination: 'plan',
+        wakeTime: effectiveWakeTime
+      } satisfies PaceframeMorningPayload
+    },
+    trigger
+  });
+
+  const nextTriggerAt = await Notifications.getNextTriggerDateAsync(trigger);
+
+  return {
+    wakeTime: effectiveWakeTime,
+    notificationId,
+    nextTriggerAt: nextTriggerAt ? new Date(nextTriggerAt).toISOString() : null
+  };
+}
+
+export async function syncMorningNotificationAsync(
+  wakeTime: string | null | undefined,
+  options: {
+    requestPermissions?: boolean;
+  } = {}
+): Promise<MorningSyncSummary> {
+  configureNotificationHandler();
+  await ensureReminderChannelAsync();
+
+  const cancelled = await cancelMorningNotificationAsync();
+  const permission = await ensureNotificationPermissionsAsync(options.requestPermissions ?? false);
+
+  if (!permission.granted) {
+    return {
+      permission,
+      scheduled: null,
+      cancelled
+    };
+  }
+
+  return {
+    permission,
+    scheduled: await scheduleMorningNotificationAsync(wakeTime),
+    cancelled
+  };
 }

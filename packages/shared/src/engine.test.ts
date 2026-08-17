@@ -10,6 +10,7 @@ import {
   mergeDashboardState,
   mockDashboard
 } from './index';
+import type { DashboardState } from './domain';
 
 describe('planning engine', () => {
   it('requires energy confirmation on moderate burnout days before revealing a lead task', () => {
@@ -276,5 +277,14 @@ describe('planning engine', () => {
     expect(merged.tasks[0]?.estimatedMinutes).toBe(90);
     expect(merged.tasks[1]?.estimatedMinutes).toBe(20);
     expect(merged.energyState.focusLabel).toBe('Old saved state');
+  });
+
+  it('supplies the 8:00 AM wake-time default for legacy profiles', () => {
+    const { wakeTime: _legacyWakeTime, ...legacyProfile } = mockDashboard.profile;
+    const merged = mergeDashboardState({
+      profile: legacyProfile as DashboardState['profile']
+    });
+
+    expect(merged.profile.wakeTime).toBe('08:00');
   });
 });

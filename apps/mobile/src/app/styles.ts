@@ -34,7 +34,11 @@ export const styles = StyleSheet.create({
     flex: 1
   },
   transitionOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
     backgroundColor: 'rgba(7, 15, 29, 0.72)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1651,6 +1655,70 @@ export const styles = StyleSheet.create({
     paddingVertical: 14,
     color: '#0f1730',
     marginBottom: 12
+  },
+  wakeTimeTrigger: {
+    borderRadius: 16,
+    backgroundColor: '#eaf2ff',
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between'
+  },
+  wakeTimeValue: {
+    color: '#0f1730',
+    fontSize: 16,
+    fontWeight: '800'
+  },
+  wakeTimeAction: {
+    color: '#2457d6',
+    fontWeight: '800'
+  },
+  timePickerModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(4, 10, 20, 0.72)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20
+  },
+  timePickerModalCard: {
+    width: '100%',
+    borderRadius: 24,
+    padding: 20,
+    backgroundColor: '#ffffff'
+  },
+  timePickerModalTitle: {
+    color: '#0f1730',
+    fontSize: 18,
+    fontWeight: '900',
+    textAlign: 'center'
+  },
+  timePickerModalActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 10,
+    marginTop: 4
+  },
+  timePickerPrimaryButton: {
+    borderRadius: 12,
+    backgroundColor: '#2457d6',
+    paddingHorizontal: 18,
+    paddingVertical: 11
+  },
+  timePickerPrimaryButtonLabel: {
+    color: '#ffffff',
+    fontWeight: '900'
+  },
+  timePickerSecondaryButton: {
+    borderRadius: 12,
+    backgroundColor: '#eaf2ff',
+    paddingHorizontal: 18,
+    paddingVertical: 11
+  },
+  timePickerSecondaryButtonLabel: {
+    color: '#0f1730',
+    fontWeight: '800'
   },
   textArea: {
     backgroundColor: '#eaf2ff',

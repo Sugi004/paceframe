@@ -124,6 +124,7 @@ export default function App() {
         <SetupScreen
           dashboard={app.dashboard}
           updateProfileField={app.updateProfileField}
+          setWakeTime={app.setWakeTime}
           setPlanningStyle={app.setPlanningStyle}
           setCrashWindow={app.setCrashWindow}
           adjustCareTarget={app.adjustCareTarget}
@@ -133,7 +134,7 @@ export default function App() {
     );
   }
 
-  if (!app.dashboard.profile.initialCheckInComplete) {
+  if (!app.dashboard.profile.initialCheckInComplete && !app.isMorningPlanFlowActive) {
     return renderShell(
       <ScrollView style={styles.screen} contentContainerStyle={styles.pageContent} showsVerticalScrollIndicator={false}>
         <CheckInScreen
@@ -237,7 +238,10 @@ export default function App() {
               syncStatus={app.syncStatus}
               syncMessage={app.syncMessage}
               retryCloudSync={app.retryCloudSync}
+              morningReminder={app.morningReminder}
+              retryMorningReminder={app.retryMorningReminder}
               updateProfileField={app.updateProfileField}
+              setWakeTime={app.setWakeTime}
               setPlanningStyle={app.setPlanningStyle}
               setCrashWindow={app.setCrashWindow}
               adjustCareTarget={app.adjustCareTarget}
